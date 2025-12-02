@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy backend package.json
+COPY server/package.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy server code
+COPY server/server.js ./
+
+# Create data directory
+RUN mkdir -p /app/data
+
+EXPOSE 5000
+
+CMD ["npm", "start"]
