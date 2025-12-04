@@ -250,3 +250,46 @@ export const checkLoanCompletion = (loan) => {
   const endDate = new Date(loan.end_date);
   return today >= endDate;
 };
+
+// Investment Calculations
+export const calculateInvestmentGainLoss = (currentValue, initialInvestment) => {
+  if (!initialInvestment || initialInvestment === 0) return { gain: 0, percentage: 0 };
+  
+  const gain = currentValue - initialInvestment;
+  const percentage = (gain / initialInvestment) * 100;
+  
+  return { gain, percentage };
+};
+
+export const calculateTotalInvestmentValue = (investments = []) => {
+  return investments.reduce((total, investment) => total + (investment.current_value || 0), 0);
+};
+
+export const calculateTotalPensionValue = (pensions = []) => {
+  return pensions.reduce((total, pension) => total + (pension.current_value || 0), 0);
+};
+
+export const calculateTotalInvestmentContributions = (investments = []) => {
+  return investments.reduce((total, investment) => total + (investment.monthly_contribution || 0), 0);
+};
+
+export const calculateTotalPensionContributions = (pensions = []) => {
+  const employeeContributions = pensions.reduce((total, pension) => total + (pension.monthly_contribution || 0), 0);
+  const employerContributions = pensions.reduce((total, pension) => total + (pension.employer_contribution || 0), 0);
+  
+  return {
+    employee: employeeContributions,
+    employer: employerContributions,
+    total: employeeContributions + employerContributions
+  };
+};
+
+export const calculateInvestmentAllocation = (investments = []) => {
+  const totalValue = calculateTotalInvestmentValue(investments);
+  if (totalValue === 0) return [];
+  
+  return investments.map(investment => ({
+    ...investment,
+    percentage: ((investment.current_value || 0) / totalValue) * 100
+  }));
+};

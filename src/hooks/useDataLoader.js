@@ -10,11 +10,13 @@ export const useDataLoader = (
   setMonthlySavings, 
   setMonthlySavingsInput,
   setSavingsGoals,
-  setLoans
+  setLoans,
+  setInvestments,
+  setPensions
 ) => {
   const loadData = async () => {
     try {
-      const { expenses, income, savings, loans } = await apiService.loadAllData();
+      const { expenses, income, savings, loans, investments } = await apiService.loadAllData();
       
       setExpenses(expenses);
       setIncome(income);
@@ -28,6 +30,15 @@ export const useDataLoader = (
       
       // Load loans
       setLoans(loans || []);
+      
+      // Load investments
+      if (investments) {
+        setInvestments(investments.investments || []);
+        setPensions(investments.pensions || []);
+      } else {
+        setInvestments([]);
+        setPensions([]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     }

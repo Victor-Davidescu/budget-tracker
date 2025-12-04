@@ -5,7 +5,8 @@ export const TABS = {
   INCOME: 'income',
   EXPENSES: 'expenses',
   LOANS: 'loans',
-  SAVINGS: 'savings'
+  SAVINGS: 'savings',
+  INVESTMENTS: 'investments'
 };
 
 export const LOAN_CATEGORIES = [
@@ -52,6 +53,39 @@ export const DEFAULT_SAVINGS_GOAL = {
   target_date: '',
   current_amount: 0,
   monthly_contribution: 0
+};
+
+export const INVESTMENT_TYPES = {
+  STOCKS_SHARES_ISA: 'Stocks & Shares ISA',
+  GENERAL_INVESTMENT: 'General Investment Account', 
+  CASH_ISA: 'Cash ISA'
+};
+
+export const PENSION_TYPES = {
+  WORKPLACE_PENSION: 'Workplace Pension',
+  PERSONAL_PENSION: 'Personal Pension',
+  SIPP: 'SIPP'
+};
+
+export const DEFAULT_INVESTMENT = {
+  id: null,
+  account_name: '',
+  account_type: '',
+  provider: '',
+  current_value: 0,
+  initial_investment: 0,
+  monthly_contribution: 0
+};
+
+export const DEFAULT_PENSION = {
+  id: null,
+  account_name: '',
+  pension_type: '',
+  provider: '',
+  current_value: 0,
+  initial_investment: 0,
+  monthly_contribution: 0,
+  employer_contribution: 0
 };
 
 export const getTodayString = () => {

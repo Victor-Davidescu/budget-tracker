@@ -19,7 +19,7 @@ const Layout = ({ activeTab, setActiveTab, children }) => {
 
           {/* Tabs */}
           <div className="flex border-b bg-gray-50">
-            {[TABS.OVERVIEW, TABS.INCOME, TABS.EXPENSES, TABS.LOANS, TABS.SAVINGS].map(tab => (
+            {[TABS.OVERVIEW, TABS.INCOME, TABS.EXPENSES, TABS.LOANS, TABS.SAVINGS, TABS.INVESTMENTS].map(tab => (
               <TabButton
                 key={tab}
                 isActive={activeTab === tab}

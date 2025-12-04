@@ -4,6 +4,7 @@ import { useExpenses } from './hooks/useExpenses.js';
 import { useIncome } from './hooks/useIncome.js';
 import { useSavings } from './hooks/useSavings.js';
 import { useLoans } from './hooks/useLoans.js';
+import { useInvestments } from './hooks/useInvestments.js';
 import { useDataLoader } from './hooks/useDataLoader.js';
 import { calculateTotals, getCategoryBreakdown, getEmergencyFundStatus } from './services/calculations.js';
 
@@ -14,6 +15,7 @@ import Income from './components/tabs/Income.jsx';
 import Expenses from './components/tabs/Expenses.jsx';
 import Loans from './components/tabs/Loans.jsx';
 import Savings from './components/tabs/Savings.jsx';
+import Investments from './components/tabs/Investments.jsx';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState(TABS.OVERVIEW);
@@ -22,6 +24,7 @@ const App = () => {
   const expenseHook = useExpenses();
   const incomeHook = useIncome();
   const loanHook = useLoans();
+  const investmentHook = useInvestments();
   const savingsHook = useSavings(expenseHook.expenses, incomeHook.income);
   
   // Load data
@@ -33,7 +36,9 @@ const App = () => {
     savingsHook.setMonthlySavings,
     savingsHook.setMonthlySavingsInput,
     savingsHook.setSavingsGoals,
-    loanHook.setLoans
+    loanHook.setLoans,
+    investmentHook.setInvestments,
+    investmentHook.setPensions
   );
 
   // Calculate totals and status
@@ -70,6 +75,10 @@ const App = () => {
           totals={totals}
           emergencyFundStatus={emergencyFundStatus}
         />
+      )}
+
+      {activeTab === TABS.INVESTMENTS && (
+        <Investments investmentHook={investmentHook} />
       )}
     </Layout>
   );

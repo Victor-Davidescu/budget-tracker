@@ -20,19 +20,18 @@ async function initializeDataFiles() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     
-    const files = ['expenses.json', 'income.json', 'savings.json', 'loans.json'];
+    const files = ['expenses.json', 'income.json', 'savings.json', 'loans.json', 'investments.json'];
     for (const file of files) {
       const filePath = path.join(DATA_DIR, file);
       try {
         await fs.access(filePath);
       } catch {
         // File doesn't exist, create it with default data
-        let defaultData;
-        if (file === 'savings.json') {
-          defaultData = { emergency_funds: 0, monthly_savings: 0 };
-        } else {
-          defaultData = [];
-        }
+        const defaultData = file === 'savings.json' 
+          ? { emergency_funds: 0, monthly_savings: 0, goals: [] }
+          : file === 'investments.json'
+          ? { investments: [], pensions: [] }
+          : [];
         await fs.writeFile(filePath, JSON.stringify(defaultData, null, 2));
         console.log(`Created ${file} with default data`);
       }
@@ -50,11 +49,7 @@ async function readJSONFile(filename) {
     return JSON.parse(data);
   } catch (error) {
     console.error(`Error reading ${filename}:`, error);
-    if (filename === 'savings.json') {
-      return { emergency_funds: 0, monthly_savings: 0 };
-    } else {
-      return [];
-    }
+    return filename === 'savings.json' ? { emergency_funds: 0, monthly_savings: 0 } : [];
   }
 }
 
@@ -117,6 +112,18 @@ app.get('/api/loans', async (req, res) => {
 // Save loans
 app.post('/api/loans', async (req, res) => {
   const success = await writeJSONFile('loans.json', req.body);
+  res.json({ success });
+});
+
+// Get all investments
+app.get('/api/investments', async (req, res) => {
+  const investments = await readJSONFile('investments.json');
+  res.json(investments);
+});
+
+// Save investments
+app.post('/api/investments', async (req, res) => {
+  const success = await writeJSONFile('investments.json', req.body);
   res.json({ success });
 });
 

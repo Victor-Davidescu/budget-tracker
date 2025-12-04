@@ -57,20 +57,36 @@ export const apiService = {
     return response.json();
   },
 
+  async fetchInvestments() {
+    const response = await fetch(`${API_URL}/api/investments`);
+    return response.json();
+  },
+
+  async saveInvestments(investments) {
+    const response = await fetch(`${API_URL}/api/investments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(investments)
+    });
+    return response.json();
+  },
+
   async loadAllData() {
     try {
-      const [expensesRes, incomeRes, savingsRes, loansRes] = await Promise.all([
+      const [expensesRes, incomeRes, savingsRes, loansRes, investmentsRes] = await Promise.all([
         this.fetchExpenses(),
         this.fetchIncome(),
         this.fetchSavings(),
-        this.fetchLoans()
+        this.fetchLoans(),
+        this.fetchInvestments()
       ]);
       
       return {
         expenses: expensesRes,
         income: incomeRes,
         savings: savingsRes,
-        loans: loansRes
+        loans: loansRes,
+        investments: investmentsRes
       };
     } catch (error) {
       console.error('Error loading data:', error);
