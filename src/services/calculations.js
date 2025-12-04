@@ -7,13 +7,16 @@ export const calculateTotalAnnual = (expense) => {
 };
 
 export const calculateTotals = (expenses, income, monthlySavings, savingsGoals = [], loans = []) => {
+  // Filter out ignored expenses
+  const activeExpenses = expenses.filter(e => !e.is_ignored);
+  
   const totalMonthlyIncome = income.reduce((sum, i) => sum + i.monthly_pay, 0);
   const totalAnnualIncome = income.reduce((sum, i) => sum + i.annual_pay, 0);
-  const totalMonthlyExpenses = expenses.reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
+  const totalMonthlyExpenses = activeExpenses.reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const totalMonthlyLoans = calculateTotalMonthlyLoans(loans);
-  const totalAnnualExpenses = expenses.reduce((sum, e) => sum + calculateTotalAnnual(e), 0);
-  const essentialExpenses = expenses.filter(e => e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
-  const nonEssentialExpenses = expenses.filter(e => !e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
+  const totalAnnualExpenses = activeExpenses.reduce((sum, e) => sum + calculateTotalAnnual(e), 0);
+  const essentialExpenses = activeExpenses.filter(e => e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
+  const nonEssentialExpenses = activeExpenses.filter(e => !e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans;
   
   const totalGoalContributions = calculateTotalGoalContributions(savingsGoals);
@@ -41,7 +44,10 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
 };
 
 export const calculateMonthlyEssentialExpenses = (expenses, loans = []) => {
-  const expenseTotal = expenses
+  // Filter out ignored expenses
+  const activeExpenses = expenses.filter(e => !e.is_ignored);
+  
+  const expenseTotal = activeExpenses
     .filter(e => e.is_essential)
     .reduce((sum, e) => {
       const monthly = e.monthly_cost || 0;
@@ -55,8 +61,11 @@ export const calculateMonthlyEssentialExpenses = (expenses, loans = []) => {
 };
 
 export const getCategoryBreakdown = (expenses) => {
+  // Filter out ignored expenses
+  const activeExpenses = expenses.filter(e => !e.is_ignored);
+  
   const categories = {};
-  expenses.forEach(e => {
+  activeExpenses.forEach(e => {
     const cat = e.expense_category || 'Uncategorized';
     categories[cat] = (categories[cat] || 0) + (e.monthly_cost || 0);
   });

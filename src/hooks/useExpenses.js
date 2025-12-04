@@ -31,6 +31,7 @@ export const useExpenses = () => {
         monthly_cost: monthlyValue,
         annual_cost: annualValue,
         is_essential: newExpense.is_essential,
+        is_ignored: false,
         id: Date.now()
       };
       
@@ -50,7 +51,8 @@ export const useExpenses = () => {
       expense_name: expense.expense_name,
       monthly_cost: expense.monthly_cost !== undefined && expense.monthly_cost !== null ? expense.monthly_cost.toString() : '',
       annual_cost: expense.annual_cost !== undefined && expense.annual_cost !== null ? expense.annual_cost.toString() : '',
-      is_essential: expense.is_essential
+      is_essential: expense.is_essential,
+      is_ignored: expense.is_ignored || false
     });
   };
 
@@ -91,6 +93,13 @@ export const useExpenses = () => {
     saveExpenses(sorted);
   };
 
+  const toggleExpenseIgnored = (id) => {
+    const updatedExpenses = expenses.map(expense => 
+      expense.id === id ? { ...expense, is_ignored: !expense.is_ignored } : expense
+    );
+    saveExpenses(updatedExpenses);
+  };
+
   return {
     expenses,
     setExpenses,
@@ -102,6 +111,7 @@ export const useExpenses = () => {
     startEditExpense,
     updateExpense,
     cancelEdit,
-    sortExpensesAlphabetically
+    sortExpensesAlphabetically,
+    toggleExpenseIgnored
   };
 };

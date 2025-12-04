@@ -57,7 +57,7 @@ const App = () => {
       )}
 
       {activeTab === TABS.EXPENSES && (
-        <Expenses expenseHook={expenseHook} />
+        <Expenses expenseHook={expenseHook} totalNetIncome={totals.totalAnnualIncome} />
       )}
 
       {activeTab === TABS.LOANS && (

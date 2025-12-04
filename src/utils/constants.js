@@ -29,7 +29,8 @@ export const DEFAULT_EXPENSE = {
   expense_name: '',
   monthly_cost: '',
   annual_cost: '',
-  is_essential: true
+  is_essential: true,
+  is_ignored: false
 };
 
 export const DEFAULT_INCOME = {
