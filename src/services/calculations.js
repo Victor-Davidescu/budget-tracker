@@ -19,11 +19,17 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
   const nonEssentialExpenses = activeExpenses.filter(e => !e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans;
   
-  const totalGoalContributions = calculateTotalGoalContributions(savingsGoals);
-  const totalSavingsAllocated = monthlySavings + totalGoalContributions;
+  // Calculate available funds for goals after emergency fund savings
   const maxSavings = Math.max(0, monthlySurplusRaw);
   const adjustedMonthlySavings = monthlySurplusRaw <= 0 ? 0 : Math.min(monthlySavings, maxSavings);
-  const pocketMoney = monthlySurplusRaw <= 0 ? 0 : monthlySurplusRaw - totalSavingsAllocated;
+  const availableForGoals = Math.max(0, monthlySurplusRaw - adjustedMonthlySavings);
+  
+  // Apply proportional scaling to goals
+  const goalScaling = calculateScaledGoals(savingsGoals, availableForGoals);
+  const totalScaledGoalContributions = goalScaling.totalScaledContributions;
+  
+  const totalSavingsAllocated = adjustedMonthlySavings + totalScaledGoalContributions;
+  const pocketMoney = Math.max(0, monthlySurplusRaw - totalSavingsAllocated);
   
   return {
     totalMonthlyIncome,
@@ -34,12 +40,15 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
     essentialExpenses,
     nonEssentialExpenses,
     monthlySurplus: monthlySurplusRaw,
-    monthlySavings: monthlySavings,
-    totalGoalContributions,
+    monthlySavings: adjustedMonthlySavings,
+    totalGoalContributions: totalScaledGoalContributions,
     totalSavingsAllocated,
     pocketMoney,
     annualSurplus: totalAnnualIncome - totalAnnualExpenses,
-    savingsRate: totalMonthlyIncome > 0 ? ((totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans) / totalMonthlyIncome * 100) : 0
+    savingsRate: totalMonthlyIncome > 0 ? ((totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans) / totalMonthlyIncome * 100) : 0,
+    // Goal scaling information
+    goalScaling: goalScaling,
+    availableForGoals: availableForGoals
   };
 };
 
@@ -139,6 +148,61 @@ export const calculateRequiredContribution = (targetAmount, currentAmount, month
 
 export const calculateTotalGoalContributions = (goals) => {
   return goals.reduce((total, goal) => total + (goal.monthly_contribution || 0), 0);
+};
+
+export const calculateScaledGoals = (goals, availableForGoals) => {
+  if (!goals || goals.length === 0) {
+    return {
+      scaledGoals: [],
+      totalOriginalContributions: 0,
+      totalScaledContributions: 0,
+      scalingFactor: 1,
+      isScaled: false
+    };
+  }
+
+  const totalOriginalContributions = calculateTotalGoalContributions(goals);
+  
+  // If we have enough funds, no scaling needed
+  if (availableForGoals >= totalOriginalContributions || totalOriginalContributions === 0) {
+    return {
+      scaledGoals: goals.map(goal => ({
+        ...goal,
+        monthly_contribution_original: goal.monthly_contribution,
+        monthly_contribution_adjusted: goal.monthly_contribution,
+        scaling_factor: 1,
+        is_scaled: false
+      })),
+      totalOriginalContributions,
+      totalScaledContributions: totalOriginalContributions,
+      scalingFactor: 1,
+      isScaled: false
+    };
+  }
+
+  // Calculate scaling factor
+  const scalingFactor = availableForGoals > 0 ? availableForGoals / totalOriginalContributions : 0;
+  
+  // Apply proportional scaling to each goal
+  const scaledGoals = goals.map(goal => ({
+    ...goal,
+    monthly_contribution_original: goal.monthly_contribution,
+    monthly_contribution_adjusted: (goal.monthly_contribution || 0) * scalingFactor,
+    scaling_factor: scalingFactor,
+    is_scaled: scalingFactor < 1
+  }));
+
+  const totalScaledContributions = scaledGoals.reduce(
+    (sum, goal) => sum + goal.monthly_contribution_adjusted, 0
+  );
+
+  return {
+    scaledGoals,
+    totalOriginalContributions,
+    totalScaledContributions,
+    scalingFactor,
+    isScaled: scalingFactor < 1
+  };
 };
 
 export const validateGoalAllocation = (goals, availableSavings, emergencyContribution = 0) => {

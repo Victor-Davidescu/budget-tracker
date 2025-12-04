@@ -27,9 +27,12 @@ async function initializeDataFiles() {
         await fs.access(filePath);
       } catch {
         // File doesn't exist, create it with default data
-        const defaultData = file === 'savings.json' 
-          ? { emergency_funds: 0, monthly_savings: 0 }
-          : [];
+        let defaultData;
+        if (file === 'savings.json') {
+          defaultData = { emergency_funds: 0, monthly_savings: 0 };
+        } else {
+          defaultData = [];
+        }
         await fs.writeFile(filePath, JSON.stringify(defaultData, null, 2));
         console.log(`Created ${file} with default data`);
       }
@@ -47,7 +50,11 @@ async function readJSONFile(filename) {
     return JSON.parse(data);
   } catch (error) {
     console.error(`Error reading ${filename}:`, error);
-    return filename === 'savings.json' ? { emergency_funds: 0, monthly_savings: 0 } : [];
+    if (filename === 'savings.json') {
+      return { emergency_funds: 0, monthly_savings: 0 };
+    } else {
+      return [];
+    }
   }
 }
 

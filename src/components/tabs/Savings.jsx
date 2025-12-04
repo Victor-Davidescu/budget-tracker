@@ -185,16 +185,29 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
 
         {/* Budget Allocation Summary */}
         {(() => {
-          const goalContributions = calculateTotalGoalContributions(savingsHook.savingsGoals);
-          const availableForGoals = Math.max(0, totals.monthlySurplus - savingsHook.monthlySavings);
-          const isOverAllocated = goalContributions > availableForGoals;
-          const remaining = availableForGoals - goalContributions;
+          const goalScaling = totals.goalScaling || {};
+          const scaledGoals = goalScaling.scaledGoals || [];
+          const isScaled = goalScaling.isScaled || false;
+          const scalingFactor = goalScaling.scalingFactor || 1;
+          const availableForGoals = totals.availableForGoals || 0;
+          const totalOriginalContributions = goalScaling.totalOriginalContributions || 0;
+          const totalScaledContributions = goalScaling.totalScaledContributions || 0;
+          const remaining = Math.max(0, availableForGoals - totalScaledContributions);
           
           return (
             <div className={`p-4 rounded-lg mb-6 border ${
-              isOverAllocated ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+              isScaled ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
             }`}>
-              <h4 className="font-semibold text-gray-700 mb-3">Budget Allocation</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-700">Budget Allocation</h4>
+                {isScaled && (
+                  <div className="flex items-center gap-2 text-orange-700 text-sm">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <span>Goals scaled to {(scalingFactor * 100).toFixed(1)}%</span>
+                  </div>
+                )}
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg p-4 border">
                   <p className="text-sm text-blue-600 font-medium mb-1">Available for Goals</p>
@@ -203,29 +216,37 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
                 </div>
                 <div className="bg-white rounded-lg p-4 border">
                   <p className={`text-sm font-medium mb-1 ${
-                    isOverAllocated ? 'text-red-600' : 'text-green-600'
-                  }`}>Goals Total</p>
+                    isScaled ? 'text-orange-600' : 'text-green-600'
+                  }`}>
+                    {isScaled ? 'Scaled Goals Total' : 'Goals Total'}
+                  </p>
                   <p className={`text-2xl font-bold ${
-                    isOverAllocated ? 'text-red-700' : 'text-green-700'
-                  }`}>£{formatCurrency(goalContributions)}</p>
+                    isScaled ? 'text-orange-700' : 'text-green-700'
+                  }`}>£{formatCurrency(totalScaledContributions)}</p>
+                  {isScaled && totalOriginalContributions > 0 && (
+                    <p className="text-xs text-orange-600">
+                      Target: £{formatCurrency(totalOriginalContributions)}
+                    </p>
+                  )}
                   <p className={`text-xs ${
-                    isOverAllocated ? 'text-red-500' : 'text-green-500'
+                    isScaled ? 'text-orange-500' : 'text-green-500'
                   }`}>{savingsHook.savingsGoals.length} goals</p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border">
-                  <p className={`text-sm font-medium mb-1 ${
-                    remaining >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>{remaining >= 0 ? 'Remaining' : 'Over Budget'}</p>
-                  <p className={`text-2xl font-bold ${
-                    remaining >= 0 ? 'text-green-700' : 'text-red-700'
-                  }`}>£{formatCurrency(Math.abs(remaining))}</p>
-                  <p className={`text-xs ${
-                    remaining >= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {isOverAllocated ? 'Reduce goals' : 'For new goals'}
-                  </p>
+                  <p className="text-sm text-green-600 font-medium mb-1">Pocket Money</p>
+                  <p className="text-2xl font-bold text-green-700">£{formatCurrency(remaining)}</p>
+                  <p className="text-xs text-green-500">Available to spend</p>
                 </div>
               </div>
+              
+              {isScaled && (
+                <div className="mt-4 p-3 bg-orange-100 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    <strong>Auto-scaling active:</strong> Your goals have been proportionally reduced to fit your budget. 
+                    When your income increases or expenses decrease, goals will automatically scale back up.
+                  </p>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -313,57 +334,90 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
 
         {/* Goals List */}
         <div className="space-y-4">
-          {savingsHook.savingsGoals.map(goal => (
-            <div key={goal.id} className="border rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-700">{goal.name}</h4>
-                  <p className="text-sm text-gray-500">
-                    Target: £{formatCurrency(goal.target_amount)} by {new Date(goal.target_date).toLocaleDateString()}
-                  </p>
+          {savingsHook.savingsGoals.map(goal => {
+            // Find scaled version of this goal
+            const scaledGoals = totals.goalScaling?.scaledGoals || [];
+            const scaledGoal = scaledGoals.find(sg => sg.id === goal.id) || goal;
+            const isScaled = scaledGoal.is_scaled || false;
+            const originalContribution = scaledGoal.monthly_contribution_original || goal.monthly_contribution;
+            const adjustedContribution = scaledGoal.monthly_contribution_adjusted || goal.monthly_contribution;
+            
+            return (
+              <div key={goal.id} className={`border rounded-lg p-4 ${isScaled ? 'border-orange-300 bg-orange-50' : ''}`}>
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-gray-700">{goal.name}</h4>
+                      {isScaled && (
+                        <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">
+                          Scaled
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Target: £{formatCurrency(goal.target_amount)} by {new Date(goal.target_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => savingsHook.startEditGoal(goal)}
+                      className="text-blue-600 hover:text-blue-800"
+                      title="Edit goal"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => savingsHook.deleteSavingsGoal(goal.id)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delete goal"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => savingsHook.startEditGoal(goal)}
-                    className="text-blue-600 hover:text-blue-800"
-                    title="Edit goal"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => savingsHook.deleteSavingsGoal(goal.id)}
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete goal"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                
+                {/* Progress Bar */}
+                <ProgressBar
+                  percentage={goal.progress || 0}
+                  color={isScaled ? "bg-orange-500" : "bg-green-600"}
+                  className="mb-3"
+                />
+                
+                {/* Goal Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-600">Current Amount</p>
+                    <p className="font-semibold">£{formatCurrency(goal.current_amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Monthly Contribution</p>
+                    {isScaled ? (
+                      <div>
+                        <p className="font-semibold text-orange-700">
+                          £{formatCurrency(adjustedContribution)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Target: £{formatCurrency(originalContribution)}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="font-semibold">£{formatCurrency(goal.monthly_contribution || 0)}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Months Remaining</p>
+                    <p className="font-semibold">{Math.max(0, Math.ceil((new Date(goal.target_date) - new Date()) / (1000 * 60 * 60 * 24 * 30.44)))}</p>
+                  </div>
                 </div>
+                
+                {isScaled && (
+                  <div className="mt-3 p-2 bg-orange-100 rounded text-xs text-orange-800">
+                    This goal has been scaled to {(scaledGoal.scaling_factor * 100).toFixed(1)}% of target contribution to fit your current budget.
+                  </div>
+                )}
               </div>
-              
-              {/* Progress Bar */}
-              <ProgressBar
-                percentage={goal.progress || 0}
-                color="bg-green-600"
-                className="mb-3"
-              />
-              
-              {/* Goal Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <p className="text-gray-600">Current Amount</p>
-                  <p className="font-semibold">£{formatCurrency(goal.current_amount)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Monthly Contribution</p>
-                  <p className="font-semibold">£{formatCurrency(goal.monthly_contribution || 0)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Months Remaining</p>
-                  <p className="font-semibold">{Math.max(0, Math.ceil((new Date(goal.target_date) - new Date()) / (1000 * 60 * 60 * 24 * 30.44)))}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           
           {savingsHook.savingsGoals.length === 0 && (
             <div className="text-center py-8 text-gray-500">
