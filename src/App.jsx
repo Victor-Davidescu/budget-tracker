@@ -42,7 +42,7 @@ const App = () => {
   );
 
   // Calculate totals and status
-  const totals = calculateTotals(expenseHook.expenses, incomeHook.income, savingsHook.monthlySavings, savingsHook.savingsGoals, loanHook.loans);
+  const totals = calculateTotals(expenseHook.expenses, incomeHook.income, savingsHook.monthlySavings, savingsHook.savingsGoals, loanHook.loans, investmentHook.investments, investmentHook.pensions);
   const categoryBreakdown = getCategoryBreakdown(expenseHook.expenses);
   const emergencyFundStatus = getEmergencyFundStatus(expenseHook.expenses, savingsHook.currentEmergencyFunds, loanHook.loans);
 

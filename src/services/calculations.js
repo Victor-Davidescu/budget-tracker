@@ -6,7 +6,7 @@ export const calculateTotalAnnual = (expense) => {
   return (monthly * 12) + annual;
 };
 
-export const calculateTotals = (expenses, income, monthlySavings, savingsGoals = [], loans = []) => {
+export const calculateTotals = (expenses, income, monthlySavings, savingsGoals = [], loans = [], investments = [], pensions = []) => {
   // Filter out ignored expenses
   const activeExpenses = expenses.filter(e => !e.is_ignored);
   
@@ -14,10 +14,13 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
   const totalAnnualIncome = income.reduce((sum, i) => sum + i.annual_pay, 0);
   const totalMonthlyExpenses = activeExpenses.reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const totalMonthlyLoans = calculateTotalMonthlyLoans(loans);
+  const totalMonthlyInvestmentContributions = calculateTotalInvestmentContributions(investments);
+  const pensionContributions = calculateTotalPensionContributions(pensions);
+  const totalMonthlyPensionContributions = pensionContributions.employee; // Only employee contributions count towards expenses
   const totalAnnualExpenses = activeExpenses.reduce((sum, e) => sum + calculateTotalAnnual(e), 0);
   const essentialExpenses = activeExpenses.filter(e => e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const nonEssentialExpenses = activeExpenses.filter(e => !e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
-  const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans;
+  const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans - totalMonthlyInvestmentContributions - totalMonthlyPensionContributions;
   
   // Calculate available funds for goals after emergency fund savings
   const maxSavings = Math.max(0, monthlySurplusRaw);
@@ -42,6 +45,8 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
     monthlySurplus: monthlySurplusRaw,
     monthlySavings: adjustedMonthlySavings,
     totalGoalContributions: totalScaledGoalContributions,
+    totalMonthlyInvestmentContributions,
+    totalMonthlyPensionContributions,
     totalSavingsAllocated,
     pocketMoney,
     annualSurplus: totalAnnualIncome - totalAnnualExpenses,

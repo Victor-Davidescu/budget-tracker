@@ -72,12 +72,20 @@ const Overview = ({
         
         {/* Sub-cards for Savings and Pocket Money */}
         {totals.monthlySurplus > 0 && (
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-blue-200">
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-blue-200">
             {/* Savings Sub-card */}
             <div className="bg-white rounded-lg p-4 border border-purple-200">
               <p className="text-sm text-purple-600 font-medium mb-1">Savings</p>
               <p className="text-xl font-bold text-purple-700">
                 £{formatCurrency(totals.totalSavingsAllocated)}
+              </p>
+            </div>
+            
+            {/* Investment Sub-card */}
+            <div className="bg-white rounded-lg p-4 border border-purple-200">
+              <p className="text-sm text-purple-600 font-medium mb-1">Investments</p>
+              <p className="text-xl font-bold text-purple-700">
+                £{formatCurrency((totals.totalMonthlyInvestmentContributions || 0) + (totals.totalMonthlyPensionContributions || 0))}
               </p>
             </div>
             
