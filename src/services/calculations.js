@@ -21,9 +21,16 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
   // Calculate surplus before any allocations
   const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans;
   
-  // Calculate available funds for savings goals after emergency fund savings
+  // Calculate available funds and scale emergency fund savings if needed
   const maxSavings = Math.max(0, monthlySurplusRaw);
   const adjustedMonthlySavings = monthlySurplusRaw <= 0 ? 0 : Math.min(monthlySavings, maxSavings);
+  const emergencyFundScaling = {
+    original: monthlySavings,
+    adjusted: adjustedMonthlySavings,
+    isScaled: adjustedMonthlySavings < monthlySavings,
+    scalingFactor: monthlySavings > 0 ? adjustedMonthlySavings / monthlySavings : 1
+  };
+  
   const availableForGoals = Math.max(0, monthlySurplusRaw - adjustedMonthlySavings);
   
   // Apply proportional scaling to savings goals
@@ -62,6 +69,8 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
     goalScaling: goalScaling,
     // Investment scaling information  
     investmentScaling: investmentScaling,
+    // Emergency fund scaling information
+    emergencyFundScaling: emergencyFundScaling,
     availableForGoals: availableForGoals
   };
 };

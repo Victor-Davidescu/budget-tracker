@@ -6,7 +6,28 @@ import { calculateTotalGoalContributions } from '../../services/calculations.js'
 
 const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
   const maxSavings = Math.max(0, totals.monthlySurplus);
-  const isInDeficit = totals.monthlySurplus <= 0;
+  const isInDeficit = totals.monthlySurplus < 0;
+  const isEmergencyFundScaled = totals?.emergencyFundScaling?.isScaled || false;
+
+  const renderEmergencyFundScalingIndicator = () => {
+    if (!isEmergencyFundScaled) return null;
+    
+    const scaling = totals.emergencyFundScaling;
+    
+    return (
+      <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+          <span className="text-sm font-medium text-orange-700">
+            Emergency fund contribution has been reduced due to insufficient funds
+          </span>
+        </div>
+        <div className="text-xs text-orange-600">
+          Target: £{formatCurrency(scaling.original)} → Actual: £{formatCurrency(scaling.adjusted)} ({(scaling.scalingFactor * 100).toFixed(1)}%)
+        </div>
+      </div>
+    );
+  };
   
   const colorClasses = {
     red: {
@@ -115,6 +136,9 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
           </div>
         )}
 
+        {/* Emergency Fund Scaling Indicator */}
+        {renderEmergencyFundScalingIndicator()}
+
         {/* Current Status Display */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
@@ -126,8 +150,13 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
           <div>
             <p className="text-sm text-gray-600 mb-1">Monthly Contribution</p>
             <p className="text-3xl font-bold text-purple-600">
-              £{formatCurrency(savingsHook.monthlySavings)}
+              £{formatCurrency(totals?.emergencyFundScaling?.adjusted || savingsHook.monthlySavings)}
             </p>
+            {isEmergencyFundScaled && (
+              <p className="text-sm text-orange-600 mt-1">
+                (target: £{formatCurrency(totals.emergencyFundScaling.original)})
+              </p>
+            )}
           </div>
         </div>
 
@@ -401,7 +430,7 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
                         </p>
                       </div>
                     ) : (
-                      <p className="font-semibold">£{formatCurrency(goal.monthly_contribution || 0)}</p>
+                      <p className="font-semibold">£{formatCurrency(adjustedContribution || 0)}</p>
                     )}
                   </div>
                   <div>
