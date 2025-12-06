@@ -10,12 +10,39 @@ import {
   calculateTotalPensionContributions
 } from '../../services/calculations.js';
 
-const Investments = ({ investmentHook }) => {
+const Investments = ({ investmentHook, totals }) => {
   const totalInvestmentValue = calculateTotalInvestmentValue(investmentHook.investments);
   const totalPensionValue = calculateTotalPensionValue(investmentHook.pensions);
   const totalInvestmentContributions = calculateTotalInvestmentContributions(investmentHook.investments);
   const pensionContributions = calculateTotalPensionContributions(investmentHook.pensions);
+  
+  // Get scaled investments and pensions from totals
+  const scaledInvestments = totals?.investmentScaling?.scaledInvestments || investmentHook.investments;
+  const scaledPensions = totals?.investmentScaling?.scaledPensions || investmentHook.pensions;
+  const isInvestmentScaled = totals?.investmentScaling?.isScaled || false;
 
+  const renderScalingIndicator = () => {
+    if (!isInvestmentScaled) return null;
+    
+    const scalingFactor = totals.investmentScaling.scalingFactor;
+    const originalTotal = totals.investmentScaling.totalOriginalContributions;
+    const scaledTotal = totals.investmentScaling.totalScaledContributions;
+    
+    return (
+      <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+          <span className="text-sm font-medium text-orange-700">
+            Investment contributions have been scaled due to insufficient funds
+          </span>
+        </div>
+        <div className="text-xs text-orange-600">
+          Original: £{formatCurrency(originalTotal)} → Scaled: £{formatCurrency(scaledTotal)} ({(scalingFactor * 100).toFixed(1)}%)
+        </div>
+      </div>
+    );
+  };
+  
   const renderGainLoss = (currentValue, initialInvestment) => {
     const { gain, percentage } = calculateInvestmentGainLoss(currentValue, initialInvestment);
     const isPositive = gain >= 0;
@@ -78,6 +105,9 @@ const Investments = ({ investmentHook }) => {
         {/* Add Pension Form */}
         {investmentHook.isAddingPension && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+
+        {/* Scaling Indicator */}
+        {renderScalingIndicator()}
             <h4 className="font-semibold text-blue-800 mb-4">
               {investmentHook.editingPensionId ? 'Edit Pension Account' : 'Add Pension Account'}
             </h4>
@@ -204,13 +234,13 @@ const Investments = ({ investmentHook }) => {
 
         {/* Pension Accounts List */}
         <div className="space-y-4">
-          {investmentHook.pensions.length === 0 ? (
+          {scaledPensions.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg mb-2">No pension accounts yet</p>
               <p>Add your pension accounts to track your retirement savings!</p>
             </div>
           ) : (
-            investmentHook.pensions.map(pension => (
+            scaledPensions.map(pension => (
               <div key={pension.id} className="bg-white border border-blue-200 rounded-lg p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -248,7 +278,10 @@ const Investments = ({ investmentHook }) => {
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
                         <p className="text-xs text-blue-500">Your</p>
-                        <p className="text-lg font-bold text-blue-700">£{formatCurrency(pension.monthly_contribution)}</p>
+                        <p className="text-lg font-bold text-blue-700">£{formatCurrency(pension.monthly_contribution_adjusted || pension.monthly_contribution)}</p>
+                        {pension.is_scaled && (
+                          <p className="text-xs text-orange-600">(was £{formatCurrency(pension.monthly_contribution_original)})</p>
+                        )}
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-blue-500">Employer</p>
@@ -256,7 +289,7 @@ const Investments = ({ investmentHook }) => {
                       </div>
                       <div className="text-center border-l border-blue-200 pl-4">
                         <p className="text-xs text-blue-500">Total</p>
-                        <p className="text-lg font-bold text-blue-700">£{formatCurrency(pension.monthly_contribution + pension.employer_contribution)}</p>
+                        <p className="text-lg font-bold text-blue-700">£{formatCurrency((pension.monthly_contribution_adjusted || pension.monthly_contribution) + pension.employer_contribution)}</p>
                       </div>
                     </div>
                   </div>
@@ -403,13 +436,13 @@ const Investments = ({ investmentHook }) => {
 
         {/* Investment Accounts List */}
         <div className="space-y-4">
-          {investmentHook.investments.length === 0 ? (
+          {scaledInvestments.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p className="text-lg mb-2">No investment accounts yet</p>
               <p>Add your first investment account to start tracking your portfolio!</p>
             </div>
           ) : (
-            investmentHook.investments.map(investment => (
+            scaledInvestments.map(investment => (
               <div key={investment.id} className="bg-white border border-purple-200 rounded-lg p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -444,7 +477,10 @@ const Investments = ({ investmentHook }) => {
                   {/* Monthly Contribution Card */}
                   <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
                     <p className="text-sm text-purple-600 font-medium mb-1">Monthly Contribution</p>
-                    <p className="text-lg font-bold text-purple-700">£{formatCurrency(investment.monthly_contribution)}</p>
+                    <p className="text-lg font-bold text-purple-700">£{formatCurrency(investment.monthly_contribution_adjusted || investment.monthly_contribution)}</p>
+                    {investment.is_scaled && (
+                      <p className="text-xs text-orange-600">(was £{formatCurrency(investment.monthly_contribution_original)})</p>
+                    )}
                   </div>
                   
                   {/* Gain/Loss Card */}

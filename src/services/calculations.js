@@ -1,4 +1,4 @@
-import { parseNumber, roundToNextHundred } from '../utils/formatters.js';
+import { parseNumber, roundToNextHundred, formatCurrency } from '../utils/formatters.js';
 
 export const calculateTotalAnnual = (expense) => {
   const monthly = expense.monthly_cost || 0;
@@ -14,25 +14,32 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
   const totalAnnualIncome = income.reduce((sum, i) => sum + i.annual_pay, 0);
   const totalMonthlyExpenses = activeExpenses.reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const totalMonthlyLoans = calculateTotalMonthlyLoans(loans);
-  const totalMonthlyInvestmentContributions = calculateTotalInvestmentContributions(investments);
-  const pensionContributions = calculateTotalPensionContributions(pensions);
-  const totalMonthlyPensionContributions = pensionContributions.employee; // Only employee contributions count towards expenses
   const totalAnnualExpenses = activeExpenses.reduce((sum, e) => sum + calculateTotalAnnual(e), 0);
   const essentialExpenses = activeExpenses.filter(e => e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const nonEssentialExpenses = activeExpenses.filter(e => !e.is_essential).reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
-  const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans - totalMonthlyInvestmentContributions - totalMonthlyPensionContributions;
   
-  // Calculate available funds for goals after emergency fund savings
+  // Calculate surplus before any allocations
+  const monthlySurplusRaw = totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans;
+  
+  // Calculate available funds for savings goals after emergency fund savings
   const maxSavings = Math.max(0, monthlySurplusRaw);
   const adjustedMonthlySavings = monthlySurplusRaw <= 0 ? 0 : Math.min(monthlySavings, maxSavings);
   const availableForGoals = Math.max(0, monthlySurplusRaw - adjustedMonthlySavings);
   
-  // Apply proportional scaling to goals
+  // Apply proportional scaling to savings goals
   const goalScaling = calculateScaledGoals(savingsGoals, availableForGoals);
   const totalScaledGoalContributions = goalScaling.totalScaledContributions;
   
   const totalSavingsAllocated = adjustedMonthlySavings + totalScaledGoalContributions;
-  const pocketMoney = Math.max(0, monthlySurplusRaw - totalSavingsAllocated);
+  
+  // Calculate available funds for investments after savings allocation
+  const availableForInvestments = Math.max(0, monthlySurplusRaw - totalSavingsAllocated);
+  
+  // Apply proportional scaling to investments
+  const investmentScaling = calculateScaledInvestments(investments, pensions, availableForInvestments);
+  const totalScaledInvestmentContributions = investmentScaling.totalScaledContributions;
+  
+  const pocketMoney = Math.max(0, monthlySurplusRaw - totalSavingsAllocated - totalScaledInvestmentContributions);
   
   return {
     totalMonthlyIncome,
@@ -45,14 +52,16 @@ export const calculateTotals = (expenses, income, monthlySavings, savingsGoals =
     monthlySurplus: monthlySurplusRaw,
     monthlySavings: adjustedMonthlySavings,
     totalGoalContributions: totalScaledGoalContributions,
-    totalMonthlyInvestmentContributions,
-    totalMonthlyPensionContributions,
+    totalMonthlyInvestmentContributions: totalScaledInvestmentContributions,
+    totalMonthlyPensionContributions: investmentScaling.scaledPensions.reduce((sum, p) => sum + p.monthly_contribution_adjusted, 0),
     totalSavingsAllocated,
     pocketMoney,
     annualSurplus: totalAnnualIncome - totalAnnualExpenses,
     savingsRate: totalMonthlyIncome > 0 ? ((totalMonthlyIncome - totalMonthlyExpenses - totalMonthlyLoans) / totalMonthlyIncome * 100) : 0,
     // Goal scaling information
     goalScaling: goalScaling,
+    // Investment scaling information  
+    investmentScaling: investmentScaling,
     availableForGoals: availableForGoals
   };
 };
@@ -61,17 +70,20 @@ export const calculateMonthlyEssentialExpenses = (expenses, loans = []) => {
   // Filter out ignored expenses
   const activeExpenses = expenses.filter(e => !e.is_ignored);
   
-  const expenseTotal = activeExpenses
+  const monthlyTotal = activeExpenses
     .filter(e => e.is_essential)
-    .reduce((sum, e) => {
-      const monthly = e.monthly_cost || 0;
-      const annualAsMonthly = e.annual_cost ? e.annual_cost / 12 : 0;
-      return sum + monthly + annualAsMonthly;
-    }, 0);
+    .reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
+    
+  const annualTotal = activeExpenses
+    .filter(e => e.is_essential)
+    .reduce((sum, e) => sum + (e.annual_cost || 0), 0);
   
   const loanTotal = calculateTotalMonthlyLoans(loans);
   
-  return expenseTotal + loanTotal;
+  return {
+    monthly: monthlyTotal + loanTotal,
+    annual: annualTotal
+  };
 };
 
 export const getCategoryBreakdown = (expenses) => {
@@ -87,9 +99,9 @@ export const getCategoryBreakdown = (expenses) => {
 };
 
 export const getEmergencyFundStatus = (expenses, currentEmergencyFunds, loans = []) => {
-  const monthlyEssential = calculateMonthlyEssentialExpenses(expenses, loans);
-  const minimumRaw = monthlyEssential * 3;
-  const recommendedRaw = monthlyEssential * 6;
+  const essentialExpenses = calculateMonthlyEssentialExpenses(expenses, loans);
+  const minimumRaw = (essentialExpenses.monthly * 3) + essentialExpenses.annual;
+  const recommendedRaw = (essentialExpenses.monthly * 6) + essentialExpenses.annual;
   
   const minimum = roundToNextHundred(minimumRaw);
   const recommended = roundToNextHundred(recommendedRaw);
@@ -109,18 +121,19 @@ export const getEmergencyFundStatus = (expenses, currentEmergencyFunds, loans = 
     status = 'warning';
     color = 'orange';
     percentage = ((current - minimum) / (recommended - minimum)) * 100;
-    const monthsToGo = ((recommended - current) / monthlyEssential).toFixed(1);
-    message = `Good progress! You're ${monthsToGo} months away from your recommended target.`;
+    const shortfall = recommended - current;
+    message = `Good progress! You need £${formatCurrency(shortfall)} more to reach your recommended target.`;
   } else {
     status = 'danger';
     color = 'red';
     percentage = (current / minimum) * 100;
-    const monthsToGo = ((minimum - current) / monthlyEssential).toFixed(1);
-    message = `You're ${monthsToGo} months away from your minimum target.`;
+    const shortfall = minimum - current;
+    message = `You need £${formatCurrency(shortfall)} more to reach your minimum target.`;
   }
   
   return {
-    monthlyEssential,
+    monthlyEssential: essentialExpenses.monthly,
+    annualEssential: essentialExpenses.annual,
     minimum,
     recommended,
     current,
@@ -153,6 +166,80 @@ export const calculateRequiredContribution = (targetAmount, currentAmount, month
 
 export const calculateTotalGoalContributions = (goals) => {
   return goals.reduce((total, goal) => total + (goal.monthly_contribution || 0), 0);
+};
+
+export const calculateScaledInvestments = (investments, pensions, availableForInvestments) => {
+  const totalInvestmentContributions = calculateTotalInvestmentContributions(investments);
+  const pensionContributions = calculateTotalPensionContributions(pensions);
+  const totalPensionContributions = pensionContributions.employee;
+  const totalOriginalContributions = totalInvestmentContributions + totalPensionContributions;
+
+  if (!investments || investments.length === 0 && (!pensions || pensions.length === 0)) {
+    return {
+      scaledInvestments: [],
+      scaledPensions: [],
+      totalOriginalContributions: 0,
+      totalScaledContributions: 0,
+      scalingFactor: 1,
+      isScaled: false
+    };
+  }
+
+  // If we have enough funds, no scaling needed
+  if (availableForInvestments >= totalOriginalContributions || totalOriginalContributions === 0) {
+    return {
+      scaledInvestments: investments.map(investment => ({
+        ...investment,
+        monthly_contribution_original: investment.monthly_contribution,
+        monthly_contribution_adjusted: investment.monthly_contribution,
+        scaling_factor: 1,
+        is_scaled: false
+      })),
+      scaledPensions: pensions.map(pension => ({
+        ...pension,
+        monthly_contribution_original: pension.monthly_contribution,
+        monthly_contribution_adjusted: pension.monthly_contribution,
+        scaling_factor: 1,
+        is_scaled: false
+      })),
+      totalOriginalContributions,
+      totalScaledContributions: totalOriginalContributions,
+      scalingFactor: 1,
+      isScaled: false
+    };
+  }
+
+  // Calculate scaling factor
+  const scalingFactor = availableForInvestments > 0 ? availableForInvestments / totalOriginalContributions : 0;
+
+  // Apply proportional scaling to each investment and pension
+  const scaledInvestments = investments.map(investment => ({
+    ...investment,
+    monthly_contribution_original: investment.monthly_contribution,
+    monthly_contribution_adjusted: (investment.monthly_contribution || 0) * scalingFactor,
+    scaling_factor: scalingFactor,
+    is_scaled: scalingFactor < 1
+  }));
+
+  const scaledPensions = pensions.map(pension => ({
+    ...pension,
+    monthly_contribution_original: pension.monthly_contribution,
+    monthly_contribution_adjusted: (pension.monthly_contribution || 0) * scalingFactor,
+    scaling_factor: scalingFactor,
+    is_scaled: scalingFactor < 1
+  }));
+
+  const totalScaledContributions = scaledInvestments.reduce((sum, investment) => sum + investment.monthly_contribution_adjusted, 0) +
+                                  scaledPensions.reduce((sum, pension) => sum + pension.monthly_contribution_adjusted, 0);
+
+  return {
+    scaledInvestments,
+    scaledPensions,
+    totalOriginalContributions,
+    totalScaledContributions,
+    scalingFactor,
+    isScaled: scalingFactor < 1
+  };
 };
 
 export const calculateScaledGoals = (goals, availableForGoals) => {

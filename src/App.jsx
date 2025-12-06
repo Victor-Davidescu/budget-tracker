@@ -78,7 +78,10 @@ const App = () => {
       )}
 
       {activeTab === TABS.INVESTMENTS && (
-        <Investments investmentHook={investmentHook} />
+        <Investments 
+          investmentHook={investmentHook} 
+          totals={totals}
+        />
       )}
     </Layout>
   );

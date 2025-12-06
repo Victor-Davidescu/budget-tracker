@@ -133,12 +133,6 @@ const Overview = ({
               <span className="text-gray-600">Non-Essential:</span>
               <span className="font-semibold">£{formatCurrency(totals.nonEssentialExpenses)}</span>
             </div>
-            <div className="flex justify-between border-t pt-3">
-              <span className="text-gray-700 font-medium">Savings Rate:</span>
-              <span className={`font-bold ${totals.savingsRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatPercentage(totals.savingsRate)}
-              </span>
-            </div>
           </div>
         </div>
       </div>
