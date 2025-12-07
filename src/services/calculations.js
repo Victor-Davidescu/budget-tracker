@@ -214,14 +214,14 @@ export const calculateScaledInvestments = (investments, pensions, availableForIn
       scaledInvestments: investments.map(investment => ({
         ...investment,
         monthly_contribution_original: investment.monthly_contribution,
-        monthly_contribution_adjusted: investment.monthly_contribution,
+        monthly_contribution_adjusted: investment.is_ignored ? 0 : investment.monthly_contribution,
         scaling_factor: 1,
         is_scaled: false
       })),
       scaledPensions: pensions.map(pension => ({
         ...pension,
         monthly_contribution_original: pension.monthly_contribution,
-        monthly_contribution_adjusted: pension.monthly_contribution,
+        monthly_contribution_adjusted: pension.is_ignored ? 0 : pension.monthly_contribution,
         scaling_factor: 1,
         is_scaled: false
       })),
@@ -236,24 +236,46 @@ export const calculateScaledInvestments = (investments, pensions, availableForIn
   const scalingFactor = availableForInvestments > 0 ? availableForInvestments / totalOriginalContributions : 0;
 
   // Apply proportional scaling to each investment and pension
-  const scaledInvestments = investments.map(investment => ({
-    ...investment,
-    monthly_contribution_original: investment.monthly_contribution,
-    monthly_contribution_adjusted: (investment.monthly_contribution || 0) * scalingFactor,
-    scaling_factor: scalingFactor,
-    is_scaled: scalingFactor < 1
-  }));
+  const scaledInvestments = investments.map(investment => {
+    if (investment.is_ignored) {
+      return {
+        ...investment,
+        monthly_contribution_original: investment.monthly_contribution,
+        monthly_contribution_adjusted: 0, // Don't contribute to budget calculations
+        scaling_factor: 1,
+        is_scaled: false
+      };
+    }
+    return {
+      ...investment,
+      monthly_contribution_original: investment.monthly_contribution,
+      monthly_contribution_adjusted: (investment.monthly_contribution || 0) * scalingFactor,
+      scaling_factor: scalingFactor,
+      is_scaled: scalingFactor < 1
+    };
+  });
 
-  const scaledPensions = pensions.map(pension => ({
-    ...pension,
-    monthly_contribution_original: pension.monthly_contribution,
-    monthly_contribution_adjusted: (pension.monthly_contribution || 0) * scalingFactor,
-    scaling_factor: scalingFactor,
-    is_scaled: scalingFactor < 1
-  }));
+  const scaledPensions = pensions.map(pension => {
+    if (pension.is_ignored) {
+      return {
+        ...pension,
+        monthly_contribution_original: pension.monthly_contribution,
+        monthly_contribution_adjusted: 0, // Don't contribute to budget calculations
+        scaling_factor: 1,
+        is_scaled: false
+      };
+    }
+    return {
+      ...pension,
+      monthly_contribution_original: pension.monthly_contribution,
+      monthly_contribution_adjusted: (pension.monthly_contribution || 0) * scalingFactor,
+      scaling_factor: scalingFactor,
+      is_scaled: scalingFactor < 1
+    };
+  });
 
-  const totalScaledContributions = scaledInvestments.reduce((sum, investment) => sum + investment.monthly_contribution_adjusted, 0) +
-                                  scaledPensions.reduce((sum, pension) => sum + pension.monthly_contribution_adjusted, 0);
+  const totalScaledContributions = scaledInvestments.filter(inv => !inv.is_ignored).reduce((sum, investment) => sum + investment.monthly_contribution_adjusted, 0) +
+                                  scaledPensions.filter(pen => !pen.is_ignored).reduce((sum, pension) => sum + pension.monthly_contribution_adjusted, 0);
 
   return {
     scaledInvestments,
@@ -385,12 +407,15 @@ export const calculateTotalPensionValue = (pensions = []) => {
 };
 
 export const calculateTotalInvestmentContributions = (investments = []) => {
-  return investments.reduce((total, investment) => total + (investment.monthly_contribution || 0), 0);
+  return investments
+    .filter(investment => !investment.is_ignored)
+    .reduce((total, investment) => total + (investment.monthly_contribution || 0), 0);
 };
 
 export const calculateTotalPensionContributions = (pensions = []) => {
-  const employeeContributions = pensions.reduce((total, pension) => total + (pension.monthly_contribution || 0), 0);
-  const employerContributions = pensions.reduce((total, pension) => total + (pension.employer_contribution || 0), 0);
+  const activeP = pensions.filter(pension => !pension.is_ignored);
+  const employeeContributions = activeP.reduce((total, pension) => total + (pension.monthly_contribution || 0), 0);
+  const employerContributions = activeP.reduce((total, pension) => total + (pension.employer_contribution || 0), 0);
   
   return {
     employee: employeeContributions,

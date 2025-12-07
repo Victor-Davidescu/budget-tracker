@@ -76,7 +76,8 @@ export const DEFAULT_INVESTMENT = {
   provider: '',
   current_value: 0,
   initial_investment: 0,
-  monthly_contribution: 0
+  monthly_contribution: 0,
+  is_ignored: false
 };
 
 export const DEFAULT_PENSION = {
@@ -87,5 +88,6 @@ export const DEFAULT_PENSION = {
   current_value: 0,
   initial_investment: 0,
   monthly_contribution: 0,
-  employer_contribution: 0
+  employer_contribution: 0,
+  is_ignored: false
 };

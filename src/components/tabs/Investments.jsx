@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Edit2, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, TrendingUp, TrendingDown, Eye, EyeOff } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters.js';
 import { INVESTMENT_TYPES, PENSION_TYPES } from '../../utils/constants.js';
 import { 
@@ -241,13 +241,20 @@ const Investments = ({ investmentHook, totals }) => {
             </div>
           ) : (
             scaledPensions.map(pension => (
-              <div key={pension.id} className="bg-white border border-blue-200 rounded-lg p-4">
+              <div key={pension.id} className={`bg-white border border-blue-200 rounded-lg p-4 ${pension.is_ignored ? 'opacity-60 bg-gray-50' : ''}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="text-lg font-semibold text-blue-800">{pension.account_name}</h4>
                     <p className="text-sm text-blue-600">{pension.pension_type} • {pension.provider}</p>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => investmentHook.togglePensionIgnored(pension.id)}
+                      className={`${pension.is_ignored ? 'text-green-600 hover:text-green-800' : 'text-gray-600 hover:text-gray-800'}`}
+                      title={pension.is_ignored ? 'Include in calculations' : 'Ignore in calculations'}
+                    >
+                      {pension.is_ignored ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </button>
                     <button
                       onClick={() => investmentHook.startEditPension(pension)}
                       className="text-blue-600 hover:text-blue-800"
@@ -443,13 +450,20 @@ const Investments = ({ investmentHook, totals }) => {
             </div>
           ) : (
             scaledInvestments.map(investment => (
-              <div key={investment.id} className="bg-white border border-purple-200 rounded-lg p-4">
+              <div key={investment.id} className={`bg-white border border-purple-200 rounded-lg p-4 ${investment.is_ignored ? 'opacity-60 bg-gray-50' : ''}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="text-lg font-semibold text-purple-800">{investment.account_name}</h4>
                     <p className="text-sm text-purple-600">{investment.account_type} • {investment.provider}</p>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => investmentHook.toggleInvestmentIgnored(investment.id)}
+                      className={`${investment.is_ignored ? 'text-green-600 hover:text-green-800' : 'text-gray-600 hover:text-gray-800'}`}
+                      title={investment.is_ignored ? 'Include in calculations' : 'Ignore in calculations'}
+                    >
+                      {investment.is_ignored ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </button>
                     <button
                       onClick={() => investmentHook.startEditInvestment(investment)}
                       className="text-purple-600 hover:text-purple-800"

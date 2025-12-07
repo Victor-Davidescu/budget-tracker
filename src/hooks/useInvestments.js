@@ -149,6 +149,22 @@ export const useInvestments = () => {
     setIsAddingPension(false);
   };
 
+  const toggleInvestmentIgnored = async (investmentId) => {
+    const updatedInvestments = investments.map(investment => 
+      investment.id === investmentId ? { ...investment, is_ignored: !investment.is_ignored } : investment
+    );
+    setInvestments(updatedInvestments);
+    await saveInvestmentData(updatedInvestments, pensions);
+  };
+
+  const togglePensionIgnored = async (pensionId) => {
+    const updatedPensions = pensions.map(pension => 
+      pension.id === pensionId ? { ...pension, is_ignored: !pension.is_ignored } : pension
+    );
+    setPensions(updatedPensions);
+    await saveInvestmentData(investments, updatedPensions);
+  };
+
   return {
     // Investment state
     investments,
@@ -182,6 +198,8 @@ export const useInvestments = () => {
     deletePension,
     startEditPension,
     saveEditPension,
-    cancelPensionEdit
+    cancelPensionEdit,
+    toggleInvestmentIgnored,
+    togglePensionIgnored
   };
 };
