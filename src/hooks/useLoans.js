@@ -98,6 +98,14 @@ export const useLoans = () => {
     await saveLoansData(sortedLoans);
   };
 
+  const toggleLoanIgnored = async (loanId) => {
+    const updatedLoans = loans.map(loan => 
+      loan.id === loanId ? { ...loan, is_ignored: !loan.is_ignored } : loan
+    );
+    setLoans(updatedLoans);
+    await saveLoansData(updatedLoans);
+  };
+
   return {
     loans,
     setLoans,
@@ -113,6 +121,7 @@ export const useLoans = () => {
     saveEditLoan,
     cancelLoanEdit,
     markLoanCompleted,
-    sortLoansAlphabetically
+    sortLoansAlphabetically,
+    toggleLoanIgnored
   };
 };

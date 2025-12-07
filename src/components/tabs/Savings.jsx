@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import ProgressBar from '../ui/ProgressBar.jsx';
 import { formatCurrency } from '../../utils/formatters.js';
 import { calculateTotalGoalContributions } from '../../services/calculations.js';
@@ -175,14 +175,38 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
         </div>
 
         {/* Targets */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4 border">
-            <p className="text-sm text-gray-600 mb-1">Monthly Essential</p>
-            <p className="text-xl font-bold text-gray-700">
-              £{formatCurrency(emergencyFundStatus.monthlyEssential)}
+            <p className="text-sm text-gray-600 mb-1">Monthly Essentials</p>
+            <p className="text-xl font-bold text-blue-600">
+              £{formatCurrency(emergencyFundStatus.monthlyEssentialsOnly)}
             </p>
           </div>
           
+          <div className="bg-white rounded-lg p-4 border">
+            <p className="text-sm text-gray-600 mb-1">Monthly Loans</p>
+            <p className="text-xl font-bold text-purple-600">
+              £{formatCurrency(emergencyFundStatus.monthlyLoans)}
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-lg p-4 border">
+            <p className="text-sm text-gray-600 mb-1">Total Monthly</p>
+            <p className="text-xl font-bold text-gray-700">
+              £{formatCurrency(emergencyFundStatus.monthlyTotal)}
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-lg p-4 border">
+            <p className="text-sm text-gray-600 mb-1">Annual Essentials</p>
+            <p className="text-xl font-bold text-indigo-600">
+              £{formatCurrency(emergencyFundStatus.annualEssential)}
+            </p>
+          </div>
+        </div>
+        
+        {/* Minimum and Recommended Targets */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div className="bg-white rounded-lg p-4 border">
             <p className="text-sm text-gray-600 mb-1">Minimum (3 months)</p>
             <p className="text-xl font-bold text-orange-600">
@@ -372,7 +396,7 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
             const adjustedContribution = scaledGoal.monthly_contribution_adjusted || goal.monthly_contribution;
             
             return (
-              <div key={goal.id} className={`border rounded-lg p-4 ${isScaled ? 'border-orange-300 bg-orange-50' : ''}`}>
+              <div key={goal.id} className={`border rounded-lg p-4 ${isScaled ? 'border-orange-300 bg-orange-50' : ''} ${goal.is_ignored ? 'opacity-60 border-gray-300 bg-gray-50' : ''}`}>
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -388,6 +412,13 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => savingsHook.toggleGoalIgnored(goal.id)}
+                      className={`${goal.is_ignored ? 'text-green-600 hover:text-green-800' : 'text-gray-600 hover:text-gray-800'}`}
+                      title={goal.is_ignored ? 'Include in calculations' : 'Ignore in calculations'}
+                    >
+                      {goal.is_ignored ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </button>
                     <button
                       onClick={() => savingsHook.startEditGoal(goal)}
                       className="text-blue-600 hover:text-blue-800"

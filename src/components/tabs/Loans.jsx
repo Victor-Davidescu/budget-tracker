@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Edit2, Trash2, CheckCircle, RefreshCw } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, CheckCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import ProgressBar from '../ui/ProgressBar.jsx';
 import { LOAN_CATEGORIES } from '../../utils/constants.js';
 import { formatCurrency } from '../../utils/formatters.js';
@@ -131,7 +131,7 @@ const Loans = ({ loanHook }) => {
         <div className="space-y-4">
           {loanHook.loans.map(loan => (
             <div key={loan.id} className={`border rounded-lg p-4 ${
-              loan.is_completed ? 'bg-green-50 border-green-200' : 'bg-white'
+              loan.is_completed ? 'bg-green-50 border-green-200' : loan.is_ignored ? 'opacity-60 border-gray-300 bg-gray-50' : 'bg-white'
             }`}>
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -145,6 +145,13 @@ const Loans = ({ loanHook }) => {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => loanHook.toggleLoanIgnored(loan.id)}
+                    className={`${loan.is_ignored ? 'text-green-600 hover:text-green-800' : 'text-gray-600 hover:text-gray-800'}`}
+                    title={loan.is_ignored ? 'Include in calculations' : 'Ignore in calculations'}
+                  >
+                    {loan.is_ignored ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
                   {!loan.is_completed && (
                     <button
                       onClick={() => loanHook.startEditLoan(loan)}

@@ -37,7 +37,3 @@ export const formatDate = (dateString) => {
     day: 'numeric'
   });
 };
-
-export const getTodayString = () => {
-  return new Date().toISOString().split('T')[0];
-};

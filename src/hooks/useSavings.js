@@ -150,6 +150,19 @@ export const useSavings = (expenses, income) => {
     });
   };
 
+  const toggleGoalIgnored = async (goalId) => {
+    const updatedGoals = savingsGoals.map(goal => 
+      goal.id === goalId ? { ...goal, is_ignored: !goal.is_ignored } : goal
+    );
+    setSavingsGoals(updatedGoals);
+    
+    await saveSavingsData({
+      emergency_funds: currentEmergencyFunds,
+      monthly_savings: monthlySavings,
+      goals: updatedGoals
+    });
+  };
+
   const startEditGoal = (goal) => {
     setGoalForm({ ...goal });
     setEditingGoalId(goal.id);
@@ -243,6 +256,7 @@ export const useSavings = (expenses, income) => {
     addSavingsGoal,
     updateSavingsGoal,
     deleteSavingsGoal,
+    toggleGoalIgnored,
     startEditGoal,
     saveEditGoal,
     cancelGoalEdit,

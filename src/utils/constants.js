@@ -22,7 +22,8 @@ export const DEFAULT_LOAN = {
   monthly_payment: 0,
   start_date: '',
   end_date: '',
-  is_completed: false
+  is_completed: false,
+  is_ignored: false
 };
 
 export const DEFAULT_EXPENSE = {
@@ -52,7 +53,8 @@ export const DEFAULT_SAVINGS_GOAL = {
   target_amount: '',
   target_date: '',
   current_amount: 0,
-  monthly_contribution: 0
+  monthly_contribution: 0,
+  is_ignored: false
 };
 
 export const INVESTMENT_TYPES = {
@@ -86,8 +88,4 @@ export const DEFAULT_PENSION = {
   initial_investment: 0,
   monthly_contribution: 0,
   employer_contribution: 0
-};
-
-export const getTodayString = () => {
-  return new Date().toISOString().split('T')[0];
 };

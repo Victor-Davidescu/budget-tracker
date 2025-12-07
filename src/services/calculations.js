@@ -108,9 +108,19 @@ export const getCategoryBreakdown = (expenses) => {
 };
 
 export const getEmergencyFundStatus = (expenses, currentEmergencyFunds, loans = []) => {
-  const essentialExpenses = calculateMonthlyEssentialExpenses(expenses, loans);
-  const minimumRaw = (essentialExpenses.monthly * 3) + essentialExpenses.annual;
-  const recommendedRaw = (essentialExpenses.monthly * 6) + essentialExpenses.annual;
+  // Calculate breakdown: essentials only, loans only, and total
+  const activeExpenses = expenses.filter(e => !e.is_ignored);
+  const monthlyEssentialsOnly = activeExpenses
+    .filter(e => e.is_essential)
+    .reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
+  const annualEssentialsOnly = activeExpenses
+    .filter(e => e.is_essential)
+    .reduce((sum, e) => sum + (e.annual_cost || 0), 0);
+  const monthlyLoans = calculateTotalMonthlyLoans(loans);
+  const totalMonthly = monthlyEssentialsOnly + monthlyLoans;
+  
+  const minimumRaw = (totalMonthly * 3) + annualEssentialsOnly;
+  const recommendedRaw = (totalMonthly * 6) + annualEssentialsOnly;
   
   const minimum = roundToNextHundred(minimumRaw);
   const recommended = roundToNextHundred(recommendedRaw);
@@ -141,8 +151,10 @@ export const getEmergencyFundStatus = (expenses, currentEmergencyFunds, loans = 
   }
   
   return {
-    monthlyEssential: essentialExpenses.monthly,
-    annualEssential: essentialExpenses.annual,
+    monthlyEssentialsOnly,
+    monthlyLoans,
+    monthlyTotal: totalMonthly,
+    annualEssential: annualEssentialsOnly,
     minimum,
     recommended,
     current,
@@ -174,7 +186,9 @@ export const calculateRequiredContribution = (targetAmount, currentAmount, month
 };
 
 export const calculateTotalGoalContributions = (goals) => {
-  return goals.reduce((total, goal) => total + (goal.monthly_contribution || 0), 0);
+  return goals
+    .filter(goal => !goal.is_ignored)
+    .reduce((total, goal) => total + (goal.monthly_contribution || 0), 0);
 };
 
 export const calculateScaledInvestments = (investments, pensions, availableForInvestments) => {
@@ -270,7 +284,7 @@ export const calculateScaledGoals = (goals, availableForGoals) => {
       scaledGoals: goals.map(goal => ({
         ...goal,
         monthly_contribution_original: goal.monthly_contribution,
-        monthly_contribution_adjusted: goal.monthly_contribution,
+        monthly_contribution_adjusted: goal.is_ignored ? 0 : goal.monthly_contribution,
         scaling_factor: 1,
         is_scaled: false
       })),
@@ -285,17 +299,30 @@ export const calculateScaledGoals = (goals, availableForGoals) => {
   const scalingFactor = availableForGoals > 0 ? availableForGoals / totalOriginalContributions : 0;
   
   // Apply proportional scaling to each goal
-  const scaledGoals = goals.map(goal => ({
-    ...goal,
-    monthly_contribution_original: goal.monthly_contribution,
-    monthly_contribution_adjusted: (goal.monthly_contribution || 0) * scalingFactor,
-    scaling_factor: scalingFactor,
-    is_scaled: scalingFactor < 1
-  }));
+  const scaledGoals = goals.map(goal => {
+    if (goal.is_ignored) {
+      // Ignored goals are not scaled and don't contribute to calculations
+      return {
+        ...goal,
+        monthly_contribution_original: goal.monthly_contribution,
+        monthly_contribution_adjusted: 0, // Don't contribute to budget calculations
+        scaling_factor: 1,
+        is_scaled: false
+      };
+    }
+    
+    return {
+      ...goal,
+      monthly_contribution_original: goal.monthly_contribution,
+      monthly_contribution_adjusted: (goal.monthly_contribution || 0) * scalingFactor,
+      scaling_factor: scalingFactor,
+      is_scaled: scalingFactor < 1
+    };
+  });
 
-  const totalScaledContributions = scaledGoals.reduce(
-    (sum, goal) => sum + goal.monthly_contribution_adjusted, 0
-  );
+  const totalScaledContributions = scaledGoals
+    .filter(goal => !goal.is_ignored)
+    .reduce((sum, goal) => sum + goal.monthly_contribution_adjusted, 0);
 
   return {
     scaledGoals,
@@ -306,23 +333,10 @@ export const calculateScaledGoals = (goals, availableForGoals) => {
   };
 };
 
-export const validateGoalAllocation = (goals, availableSavings, emergencyContribution = 0) => {
-  const totalGoalContributions = calculateTotalGoalContributions(goals);
-  const totalAllocated = totalGoalContributions + emergencyContribution;
-  
-  return {
-    totalGoalContributions,
-    totalAllocated,
-    remaining: Math.max(0, availableSavings - totalAllocated),
-    isOverAllocated: totalAllocated > availableSavings,
-    overAllocation: Math.max(0, totalAllocated - availableSavings)
-  };
-};
-
 // Loan Calculations
 export const calculateTotalMonthlyLoans = (loans) => {
   return loans
-    .filter(loan => !loan.is_completed)
+    .filter(loan => !loan.is_completed && !loan.is_ignored)
     .reduce((total, loan) => total + (loan.monthly_payment || 0), 0);
 };
 

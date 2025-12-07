@@ -3,44 +3,76 @@ import { PlusCircle, Edit2, Trash2, EyeOff, Eye, X, Info, RefreshCw } from 'luci
 import { formatCurrency } from '../../utils/formatters.js';
 import { calculateTotalAnnual } from '../../services/calculations.js';
 
-const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
+const ExpenseTable = ({ 
+  expenseHook, 
+  totalNetIncome, 
+  isEssential, 
+  title, 
+  colorScheme,
+  thresholds 
+}) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const housingExpenses = expenseHook.expenses.filter(expense => 
-    expense.expense_category === 'Housing'
+  
+  // Filter expenses based on type
+  const filteredExpenses = expenseHook.expenses.filter(expense => 
+    expense.is_essential === isEssential
   );
 
-  // Calculate housing totals
-  const totalHousingMonthly = housingExpenses
+  // Calculate totals
+  const totalMonthly = filteredExpenses
+    .filter(expense => !expense.is_ignored)
+    .reduce((sum, expense) => {
+      const monthly = expense.monthly_cost || 0;
+      return sum + monthly;
+    }, 0);
+
+  const totalAnnualCosts = filteredExpenses
+    .filter(expense => !expense.is_ignored)
+    .reduce((sum, expense) => {
+      const annual = expense.annual_cost || 0;
+      return sum + annual;
+    }, 0);
+
+  const totalAnnual = filteredExpenses
     .filter(expense => !expense.is_ignored)
     .reduce((sum, expense) => {
       const monthly = expense.monthly_cost || 0;
       const annual = expense.annual_cost || 0;
-      return sum + monthly + (annual / 12);
+      return sum + (monthly * 12) + annual;
     }, 0);
 
-  const totalHousingAnnual = totalHousingMonthly * 12;
-
   // Calculate percentage of net income
-  const housingPercentage = totalNetIncome > 0 ? (totalHousingAnnual / totalNetIncome) * 100 : 0;
+  const percentage = totalNetIncome > 0 ? (totalAnnual / totalNetIncome) * 100 : 0;
 
-  // Determine color coding based on percentage
+  // Determine color coding based on thresholds
   const getPercentageColor = (percentage) => {
-    if (percentage <= 30) return 'text-green-600';
-    if (percentage <= 35) return 'text-yellow-600';
+    if (percentage < thresholds.good) return 'text-green-600';
+    if (percentage <= thresholds.acceptable) return 'text-yellow-600';
     return 'text-red-600';
   };
 
   const getPercentageBg = (percentage) => {
-    if (percentage <= 30) return 'bg-green-50';
-    if (percentage <= 35) return 'bg-yellow-50';
+    if (percentage < thresholds.good) return 'bg-green-50';
+    if (percentage <= thresholds.acceptable) return 'bg-yellow-50';
     return 'bg-red-50';
   };
 
+  // Headers with Category column in 1st position
   const headers = [
     { 
+      key: 'expense_category', 
+      label: 'Category', 
+      align: 'left',
+      render: (item) => (
+        <span className={item.is_ignored ? 'text-gray-400' : ''}>
+          {item.expense_category || '-'}
+        </span>
+      )
+    },
+    { 
       key: 'expense_name', 
-      label: 'Housing Expense', 
+      label: 'Name', 
       align: 'left',
       render: (item) => (
         <span className={item.is_ignored ? 'text-gray-400' : ''}>
@@ -53,7 +85,7 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
       label: 'Monthly', 
       align: 'right',
       render: (item) => (
-        <span className={`font-semibold ${item.is_ignored ? 'text-gray-400' : 'text-blue-600'}`}>
+        <span className={`font-semibold ${item.is_ignored ? 'text-gray-400' : colorScheme.text}`}>
           {item.monthly_cost ? `£${formatCurrency(item.monthly_cost)}` : '-'}
         </span>
       )
@@ -63,7 +95,7 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
       label: 'Annual', 
       align: 'right',
       render: (item) => (
-        <span className={`font-semibold ${item.is_ignored ? 'text-gray-400' : 'text-blue-600'}`}>
+        <span className={`font-semibold ${item.is_ignored ? 'text-gray-400' : colorScheme.text}`}>
           {item.annual_cost ? `£${formatCurrency(item.annual_cost)}` : '-'}
         </span>
       )
@@ -72,39 +104,23 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
       key: 'total_annual', 
       label: 'Total Annual', 
       align: 'right',
-      className: 'bg-blue-50',
+      className: colorScheme.cellBg,
       render: (item) => (
-        <span className={`font-semibold ${item.is_ignored ? 'text-gray-400' : 'text-blue-700'}`}>
+        <span className={`font-semibold ${item.is_ignored ? 'text-gray-400' : colorScheme.textBold}`}>
           £{formatCurrency(calculateTotalAnnual(item))}
-        </span>
-      )
-    },
-    { 
-      key: 'is_essential', 
-      label: 'Is Essential?', 
-      align: 'center',
-      render: (item) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          item.is_ignored 
-            ? 'bg-gray-100 text-gray-400' 
-            : item.is_essential 
-              ? 'bg-orange-100 text-orange-700' 
-              : 'bg-purple-100 text-purple-700'
-        }`}>
-          {item.is_essential ? 'Essential' : 'Non-Essential'}
         </span>
       )
     }
   ];
 
-  // Pre-fill form with Housing category when adding
-  const handleAddHousingExpense = () => {
+  // Add expense
+  const handleAddExpense = () => {
     expenseHook.setNewExpense({
       ...expenseHook.newExpense,
-      expense_category: 'Housing'
+      is_essential: isEssential
     });
     expenseHook.addExpense();
-    setShowAddForm(false); // Hide form after adding
+    setShowAddForm(false);
   };
 
   const handleCancelAdd = () => {
@@ -113,14 +129,14 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
       expense_name: '',
       monthly_cost: '',
       annual_cost: '',
-      is_essential: true
+      is_essential: isEssential
     });
     setShowAddForm(false);
   };
 
   const handleUpdateExpense = () => {
     expenseHook.updateExpense();
-    setShowAddForm(false); // Hide form after updating
+    setShowAddForm(false);
   };
 
   const handleCancelEdit = () => {
@@ -128,36 +144,32 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
     setShowAddForm(false);
   };
 
-  const sortHousingExpensesAlphabetically = () => {
-    const housingExpenses = expenseHook.expenses.filter(expense => 
-      expense.expense_category === 'Housing'
-    );
-    const nonHousingExpenses = expenseHook.expenses.filter(expense => 
-      expense.expense_category !== 'Housing'
-    );
+  const sortExpensesAlphabetically = () => {
+    const sortedExpenses = [...expenseHook.expenses].sort((a, b) => {
+      const categoryComparison = (a.expense_category || '').localeCompare(b.expense_category || '');
+      if (categoryComparison !== 0) {
+        return categoryComparison;
+      }
+      return a.expense_name.localeCompare(b.expense_name);
+    });
     
-    const sortedHousingExpenses = [...housingExpenses].sort((a, b) => 
-      a.expense_name.localeCompare(b.expense_name)
-    );
-    
-    const allExpenses = [...nonHousingExpenses, ...sortedHousingExpenses];
-    expenseHook.setExpenses(allExpenses);
+    expenseHook.setExpenses(sortedExpenses);
   };
 
   return (
-    <div className="bg-white border border-blue-200 rounded-lg overflow-hidden">
-      {/* Housing Header with Summary */}
-      <div className={`p-6 ${getPercentageBg(housingPercentage)} border-b border-blue-200`}>
+    <div className={`bg-white border ${colorScheme.border} rounded-lg overflow-hidden`}>
+      {/* Header with Summary */}
+      <div className={`p-6 ${getPercentageBg(percentage)} border-b ${colorScheme.border}`}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-800">Housing Expenses</h3>
+          <h3 className="text-xl font-bold text-gray-800">{title}</h3>
           
           {/* Action Buttons */}
           {!showAddForm && !expenseHook.editingExpense && (
             <div className="flex items-center gap-2">
               <button
-                onClick={sortHousingExpensesAlphabetically}
+                onClick={sortExpensesAlphabetically}
                 className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm"
-                title="Sort housing expenses alphabetically"
+                title="Sort expenses alphabetically"
               >
                 <RefreshCw size={16} />
                 Sort A-Z
@@ -167,10 +179,14 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
                   setShowAddForm(true);
                   expenseHook.setNewExpense({
                     ...expenseHook.newExpense,
-                    expense_category: 'Housing'
+                    expense_category: '',
+                    expense_name: '',
+                    monthly_cost: '',
+                    annual_cost: '',
+                    is_essential: isEssential
                   });
                 }}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                className={`flex items-center gap-2 px-3 py-2 ${colorScheme.button} text-white rounded ${colorScheme.buttonHover} transition-colors text-sm`}
               >
                 <PlusCircle size={16} />
                 Add
@@ -184,22 +200,28 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
           <div className="flex items-center gap-6">
             <div className="text-center">
               <div className="text-lg font-bold text-gray-800">
-                £{formatCurrency(totalHousingMonthly)}
+                £{formatCurrency(totalMonthly)}
               </div>
               <div className="text-xs text-gray-600">per month</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-gray-800">
-                £{formatCurrency(totalHousingAnnual)}
+                £{formatCurrency(totalAnnualCosts)}
               </div>
               <div className="text-xs text-gray-600">per year</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-gray-800">
+                £{formatCurrency(totalAnnual)}
+              </div>
+              <div className="text-xs text-gray-600">total per year</div>
             </div>
           </div>
 
           {/* Percentage with Info */}
           <div className="text-right relative">
             <div className="flex items-center gap-2 justify-end mb-1">
-              <span className="text-sm text-gray-600">% of Net Income</span>
+              <span className="text-sm text-gray-600">% of Total Annual Net Income</span>
               <div className="relative">
                 <button
                   onClick={() => setShowInfo(!showInfo)}
@@ -213,19 +235,19 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
                 {showInfo && (
                   <div className="absolute right-0 top-8 z-10 w-80 bg-white border border-gray-300 shadow-lg rounded-lg p-3">
                     <div className="text-xs text-gray-700">
-                      <div className="font-semibold mb-1">Housing Cost Guidelines:</div>
+                      <div className="font-semibold mb-1">{title} Guidelines:</div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-green-500 rounded"></div>
-                          <span>≤30% - Good (Recommended)</span>
+                          <span>&lt;{thresholds.good}% - Good (Recommended)</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                          <span>30-35% - Acceptable</span>
+                          <span>{thresholds.good}-{thresholds.acceptable}% - Acceptable</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-red-500 rounded"></div>
-                          <span>&gt;35% - High (Consider reducing)</span>
+                          <span>&gt;{thresholds.acceptable}% - High (Consider reducing)</span>
                         </div>
                       </div>
                     </div>
@@ -236,11 +258,11 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
                 )}
               </div>
             </div>
-            <div className={`text-lg font-bold ${getPercentageColor(housingPercentage)}`}>
-              {housingPercentage.toFixed(1)}%
+            <div className={`text-lg font-bold ${getPercentageColor(percentage)}`}>
+              {percentage.toFixed(1)}%
               <span className="text-sm ml-2">
-                {housingPercentage <= 30 ? '(Good)' : 
-                 housingPercentage <= 35 ? '(Acceptable)' : '(High)'}
+                {percentage < thresholds.good ? '(Good)' : 
+                 percentage <= thresholds.acceptable ? '(Acceptable)' : '(High)'}
               </span>
             </div>
           </div>
@@ -255,12 +277,12 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
         )}
       </div>
 
-      {/* Add/Edit Housing Expense Form */}
+      {/* Add/Edit Expense Form */}
       {(showAddForm || expenseHook.editingExpense) && (
-        <div className="p-4 bg-blue-50 border-b border-blue-200">
+        <div className={`p-4 ${colorScheme.formBg} border-b ${colorScheme.border}`}>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-blue-800">
-              {expenseHook.editingExpense ? 'Edit Housing Expense' : 'Add Housing Expense'}
+            <h4 className={`font-semibold ${colorScheme.formText}`}>
+              {expenseHook.editingExpense ? `Edit ${title}` : `Add ${title}`}
             </h4>
             <button
               onClick={expenseHook.editingExpense ? handleCancelEdit : handleCancelAdd}
@@ -272,37 +294,38 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
           <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
             <input
               type="text"
-              placeholder="Housing Expense Name"
+              placeholder="Category"
+              value={expenseHook.newExpense.expense_category}
+              onChange={(e) => expenseHook.setNewExpense({
+                ...expenseHook.newExpense, 
+                expense_category: e.target.value
+              })}
+              className={`border ${colorScheme.inputBorder} rounded px-3 py-2`}
+            />
+            <input
+              type="text"
+              placeholder={isEssential ? "Essential Expense Name" : "Name"}
               value={expenseHook.newExpense.expense_name}
               onChange={(e) => expenseHook.setNewExpense({
                 ...expenseHook.newExpense, 
-                expense_name: e.target.value,
-                expense_category: 'Housing'
+                expense_name: e.target.value
               })}
-              className="border border-blue-300 rounded px-3 py-2"
+              className={`border ${colorScheme.inputBorder} rounded px-3 py-2`}
             />
             <input
               type="number"
               placeholder="Monthly Cost"
               value={expenseHook.newExpense.monthly_cost}
               onChange={(e) => expenseHook.setNewExpense({...expenseHook.newExpense, monthly_cost: e.target.value})}
-              className="border border-blue-300 rounded px-3 py-2"
+              className={`border ${colorScheme.inputBorder} rounded px-3 py-2`}
             />
             <input
               type="number"
               placeholder="Annual Cost"
               value={expenseHook.newExpense.annual_cost}
               onChange={(e) => expenseHook.setNewExpense({...expenseHook.newExpense, annual_cost: e.target.value})}
-              className="border border-blue-300 rounded px-3 py-2"
+              className={`border ${colorScheme.inputBorder} rounded px-3 py-2`}
             />
-            <select
-              value={expenseHook.newExpense.is_essential}
-              onChange={(e) => expenseHook.setNewExpense({...expenseHook.newExpense, is_essential: e.target.value === 'true'})}
-              className="border border-blue-300 rounded px-3 py-2"
-            >
-              <option value="true">Essential</option>
-              <option value="false">Non-Essential</option>
-            </select>
             <div className="md:col-span-2 flex gap-2">
               {expenseHook.editingExpense ? (
                 <>
@@ -322,8 +345,8 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
               ) : (
                 <>
                   <button
-                    onClick={handleAddHousingExpense}
-                    className="flex-1 bg-blue-600 text-white rounded px-4 py-2 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                    onClick={handleAddExpense}
+                    className={`flex-1 ${colorScheme.button} text-white rounded px-4 py-2 flex items-center justify-center gap-2 ${colorScheme.buttonHover} transition-colors`}
                   >
                     <PlusCircle size={18} />
                     Add
@@ -341,20 +364,20 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
         </div>
       )}
 
-      {/* Housing Expenses Table */}
-      {housingExpenses.length === 0 ? (
+      {/* Expenses Table */}
+      {filteredExpenses.length === 0 ? (
         <div className="p-8 text-center text-gray-500">
-          No housing expenses added yet. Click "Add Housing Expense" to get started.
+          No {title.toLowerCase()} added yet. Click "Add" to get started.
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-blue-50 border-b border-blue-200">
+            <thead className={`${colorScheme.headerBg} border-b ${colorScheme.border}`}>
               <tr>
                 {headers.map((header, index) => (
                   <th 
                     key={index} 
-                    className={`p-4 font-semibold text-blue-800 ${
+                    className={`p-4 font-semibold ${colorScheme.headerText} ${
                       header.align === 'right' ? 'text-right' : 
                       header.align === 'center' ? 'text-center' : 'text-left'
                     }`}
@@ -362,12 +385,12 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
                     {header.label}
                   </th>
                 ))}
-                <th className="w-32 text-center p-4 font-semibold text-blue-800">Actions</th>
+                <th className={`w-32 text-center p-4 font-semibold ${colorScheme.headerText}`}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {housingExpenses.map((expense, rowIndex) => (
-                <tr key={expense.id || rowIndex} className={`border-b hover:bg-blue-25 ${expense.is_ignored ? 'opacity-50' : ''}`}>
+              {filteredExpenses.map((expense, rowIndex) => (
+                <tr key={expense.id || rowIndex} className={`border-b hover:${colorScheme.rowHover} ${expense.is_ignored ? 'opacity-50' : ''}`}>
                   {headers.map((header, colIndex) => (
                     <td 
                       key={colIndex} 
@@ -393,7 +416,7 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
                           expenseHook.startEditExpense(expense);
                           setShowAddForm(true);
                         }}
-                        className="text-blue-600 hover:text-blue-800"
+                        className={`${colorScheme.text} ${colorScheme.textHover}`}
                         title="Edit expense"
                       >
                         <Edit2 size={16} />
@@ -417,4 +440,4 @@ const HousingExpenses = ({ expenseHook, totalNetIncome }) => {
   );
 };
 
-export default HousingExpenses;
+export default ExpenseTable;
