@@ -70,9 +70,9 @@ const Overview = ({
           <DollarSign className={totals.monthlySurplus >= 0 ? 'text-blue-600' : 'text-orange-600'} size={40} />
         </div>
         
-        {/* Sub-cards for Savings and Pocket Money */}
+        {/* Sub-cards for Savings and Investments */}
         {totals.monthlySurplus > 0 && (
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-blue-200">
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-blue-200">
             {/* Savings Sub-card */}
             <div className="bg-white rounded-lg p-4 border border-purple-200">
               <p className="text-sm text-purple-600 font-medium mb-1">Savings</p>
@@ -89,13 +89,7 @@ const Overview = ({
               </p>
             </div>
             
-            {/* Pocket Money Sub-card */}
-            <div className="bg-white rounded-lg p-4 border border-teal-200">
-              <p className="text-sm text-teal-600 font-medium mb-1">Pocket Money</p>
-              <p className="text-xl font-bold text-teal-700">
-                £{formatCurrency(totals.pocketMoney)}
-              </p>
-            </div>
+
           </div>
         )}
       </div>

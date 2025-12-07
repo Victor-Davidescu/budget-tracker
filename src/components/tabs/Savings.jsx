@@ -115,7 +115,6 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
             {!isInDeficit && (
               <div className="text-sm text-gray-600 mb-4">
                 <p>Monthly contribution: £{formatCurrency(parseFloat(savingsHook.monthlySavingsInput) || 0)} of £{formatCurrency(Math.max(0, totals.monthlySurplus - totals.totalGoalContributions))} available</p>
-                <p>This leaves you with: <span className="font-bold text-teal-600">£{formatCurrency(Math.max(0, totals.monthlySurplus - totals.totalGoalContributions - (parseFloat(savingsHook.monthlySavingsInput) || 0)))}</span> pocket money per month</p>
               </div>
             )}
             
@@ -261,7 +260,7 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white rounded-lg p-4 border">
                   <p className="text-sm text-blue-600 font-medium mb-1">Available for Goals</p>
                   <p className="text-2xl font-bold text-blue-700">£{formatCurrency(availableForGoals)}</p>
@@ -285,11 +284,7 @@ const Savings = ({ savingsHook, totals, emergencyFundStatus }) => {
                     isScaled ? 'text-orange-500' : 'text-green-500'
                   }`}>{savingsHook.savingsGoals.length} goals</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 border">
-                  <p className="text-sm text-green-600 font-medium mb-1">Pocket Money</p>
-                  <p className="text-2xl font-bold text-green-700">£{formatCurrency(remaining)}</p>
-                  <p className="text-xs text-green-500">Available to spend</p>
-                </div>
+
               </div>
               
               {isScaled && (
