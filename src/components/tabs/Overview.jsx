@@ -11,8 +11,8 @@ const Overview = ({
 }) => {
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Monthly Income Card */}
+      <div className="grid grid-cols-1 gap-4">
         <SummaryCard
           title="Monthly Income"
           value={`£${formatCurrency(totals.totalMonthlyIncome)}`}
@@ -23,32 +23,53 @@ const Overview = ({
           valueColor="text-green-700"
           iconColor="text-green-600"
         />
+      </div>
 
-        <SummaryCard
-          title="Monthly Expenses"
-          value={`£${formatCurrency(totals.totalMonthlyExpenses)}`}
-          percentage={totals.totalMonthlyIncome > 0 ? `${((totals.totalMonthlyExpenses / totals.totalMonthlyIncome) * 100).toFixed(0)}%` : '0%'}
-          icon={PieChart}
-          bgColor="bg-red-50"
-          borderColor="border-red-200"
-          titleColor="text-red-600"
-          valueColor="text-red-700"
-          percentageColor="text-red-600"
-          iconColor="text-red-600"
-        />
-
-        <SummaryCard
-          title="Monthly Loan Payments"
-          value={`£${formatCurrency(totals.totalMonthlyLoans)}`}
-          percentage={totals.totalMonthlyIncome > 0 ? `${((totals.totalMonthlyLoans / totals.totalMonthlyIncome) * 100).toFixed(0)}%` : '0%'}
-          icon={TrendingUp}
-          bgColor="bg-orange-50"
-          borderColor="border-orange-200"
-          titleColor="text-orange-600"
-          valueColor="text-orange-700"
-          percentageColor="text-orange-600"
-          iconColor="text-orange-600"
-        />
+      {/* Total Monthly Expenses Card */}
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-purple-600">
+              Total Monthly Expenses
+            </p>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-3xl font-bold text-purple-700">
+                £{formatCurrency(totals.totalMonthlyExpenses + totals.totalMonthlyLoans)}
+              </p>
+              <p className="text-lg font-semibold text-purple-600">
+                {totals.totalMonthlyIncome > 0 ? `${(((totals.totalMonthlyExpenses + totals.totalMonthlyLoans) / totals.totalMonthlyIncome) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </div>
+          </div>
+          <PieChart className="text-purple-600" size={40} />
+        </div>
+        
+        {/* Sub-cards for Needs, Wants, and Loan Payments */}
+        <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-purple-200">
+          {/* Monthly Essentials Sub-card */}
+          <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <p className="text-sm text-blue-600 font-medium mb-1">Monthly Essentials</p>
+            <p className="text-xl font-bold text-blue-700">
+              £{formatCurrency(totals.essentialExpenses)}
+            </p>
+          </div>
+          
+          {/* Monthly Non-Essentials Sub-card */}
+          <div className="bg-white rounded-lg p-4 border border-indigo-200">
+            <p className="text-sm text-indigo-600 font-medium mb-1">Monthly Non-Essentials</p>
+            <p className="text-xl font-bold text-indigo-700">
+              £{formatCurrency(totals.nonEssentialExpenses)}
+            </p>
+          </div>
+          
+          {/* Monthly Loan Payments Sub-card */}
+          <div className="bg-white rounded-lg p-4 border border-orange-200">
+            <p className="text-sm text-orange-600 font-medium mb-1">Monthly Loan Payments</p>
+            <p className="text-xl font-bold text-orange-700">
+              £{formatCurrency(totals.totalMonthlyLoans)}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Monthly Surplus/Deficit Card */}
@@ -70,9 +91,9 @@ const Overview = ({
           <DollarSign className={totals.monthlySurplus >= 0 ? 'text-blue-600' : 'text-orange-600'} size={40} />
         </div>
         
-        {/* Sub-cards for Savings and Investments */}
+        {/* Sub-cards for Savings, Investments, and Pocket Money */}
         {totals.monthlySurplus > 0 && (
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-blue-200">
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-blue-200">
             {/* Savings Sub-card */}
             <div className="bg-white rounded-lg p-4 border border-purple-200">
               <p className="text-sm text-purple-600 font-medium mb-1">Savings</p>
@@ -86,6 +107,14 @@ const Overview = ({
               <p className="text-sm text-purple-600 font-medium mb-1">Investments</p>
               <p className="text-xl font-bold text-purple-700">
                 £{formatCurrency((totals.totalMonthlyInvestmentContributions || 0) + (totals.totalMonthlyPensionContributions || 0))}
+              </p>
+            </div>
+            
+            {/* Pocket Money Sub-card */}
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <p className="text-sm text-green-600 font-medium mb-1">Pocket Money</p>
+              <p className="text-xl font-bold text-green-700">
+                £{formatCurrency(Math.max(0, totals.monthlySurplus - totals.totalSavingsAllocated - ((totals.totalMonthlyInvestmentContributions || 0) + (totals.totalMonthlyPensionContributions || 0))))}
               </p>
             </div>
             
