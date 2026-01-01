@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlusCircle, Edit2, Trash2, EyeOff, Eye, X, Info, RefreshCw } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, EyeOff, Eye, X, Info, RefreshCw, ArrowDownUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters.js';
 import { calculateTotalAnnual } from '../../services/calculations.js';
 
@@ -13,6 +13,7 @@ const ExpenseTable = ({
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [sortAmountDesc, setSortAmountDesc] = useState(true);
   
   // Filter expenses based on type
   const filteredExpenses = expenseHook.expenses.filter(expense => 
@@ -156,6 +157,16 @@ const ExpenseTable = ({
     expenseHook.setExpenses(sortedExpenses);
   };
 
+  const sortExpensesByAmount = () => {
+    const sortedExpenses = [...expenseHook.expenses].sort((a, b) => {
+      const monthlyA = a.monthly_cost || 0;
+      const monthlyB = b.monthly_cost || 0;
+      return sortAmountDesc ? monthlyB - monthlyA : monthlyA - monthlyB;
+    });
+    expenseHook.setExpenses(sortedExpenses);
+    setSortAmountDesc(!sortAmountDesc);
+  };
+
   return (
     <div className={`bg-white border ${colorScheme.border} rounded-lg overflow-hidden`}>
       {/* Header with Summary */}
@@ -173,6 +184,14 @@ const ExpenseTable = ({
               >
                 <RefreshCw size={16} />
                 Sort A-Z
+              </button>
+              <button
+                onClick={sortExpensesByAmount}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm"
+                title={sortAmountDesc ? "Sort by amount (lowest to highest)" : "Sort by amount (highest to lowest)"}
+              >
+                <ArrowDownUp size={16} />
+                Sort by Amount {sortAmountDesc ? '↓' : '↑'}
               </button>
               <button
                 onClick={() => {

@@ -98,6 +98,14 @@ export const useLoans = () => {
     await saveLoansData(sortedLoans);
   };
 
+  const sortLoansByAmount = async (descending = true) => {
+    const sortedLoans = [...loans].sort((a, b) => {
+      return descending ? b.monthly_payment - a.monthly_payment : a.monthly_payment - b.monthly_payment;
+    });
+    setLoans(sortedLoans);
+    await saveLoansData(sortedLoans);
+  };
+
   const toggleLoanIgnored = async (loanId) => {
     const updatedLoans = loans.map(loan => 
       loan.id === loanId ? { ...loan, is_ignored: !loan.is_ignored } : loan
@@ -122,6 +130,7 @@ export const useLoans = () => {
     cancelLoanEdit,
     markLoanCompleted,
     sortLoansAlphabetically,
+    sortLoansByAmount,
     toggleLoanIgnored
   };
 };

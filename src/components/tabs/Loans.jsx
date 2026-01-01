@@ -1,11 +1,18 @@
-import React from 'react';
-import { PlusCircle, Edit2, Trash2, CheckCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { PlusCircle, Edit2, Trash2, CheckCircle, RefreshCw, Eye, EyeOff, ArrowDownUp } from 'lucide-react';
 import ProgressBar from '../ui/ProgressBar.jsx';
 import { LOAN_CATEGORIES } from '../../utils/constants.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { getMonthsRemainingForLoan } from '../../services/calculations.js';
 
 const Loans = ({ loanHook }) => {
+  const [sortAmountDesc, setSortAmountDesc] = useState(true);
+
+  const handleSortByAmount = () => {
+    loanHook.sortLoansByAmount(sortAmountDesc);
+    setSortAmountDesc(!sortAmountDesc);
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white border rounded-lg p-6">
@@ -19,6 +26,14 @@ const Loans = ({ loanHook }) => {
             >
               <RefreshCw size={20} />
               Sort A-Z
+            </button>
+            <button
+              onClick={handleSortByAmount}
+              className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+              title={sortAmountDesc ? "Sort by amount (lowest to highest)" : "Sort by amount (highest to lowest)"}
+            >
+              <ArrowDownUp size={20} />
+              Sort by Amount {sortAmountDesc ? '↓' : '↑'}
             </button>
             <button
               onClick={() => loanHook.setIsAddingLoan(!loanHook.isAddingLoan)}

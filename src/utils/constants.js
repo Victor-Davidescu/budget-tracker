@@ -38,7 +38,8 @@ export const DEFAULT_EXPENSE = {
 export const DEFAULT_INCOME = {
   income_source: '',
   monthly_pay: '',
-  annual_pay: ''
+  annual_pay: '',
+  is_ignored: false
 };
 
 export const DEFAULT_SAVINGS = {

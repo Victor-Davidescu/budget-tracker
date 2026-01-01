@@ -7,11 +7,12 @@ export const calculateTotalAnnual = (expense) => {
 };
 
 export const calculateTotals = (expenses, income, monthlySavings, savingsGoals = [], loans = [], investments = [], pensions = []) => {
-  // Filter out ignored expenses
+  // Filter out ignored expenses and income
   const activeExpenses = expenses.filter(e => !e.is_ignored);
+  const activeIncome = income.filter(i => !i.is_ignored);
   
-  const totalMonthlyIncome = income.reduce((sum, i) => sum + i.monthly_pay, 0);
-  const totalAnnualIncome = income.reduce((sum, i) => sum + i.annual_pay, 0);
+  const totalMonthlyIncome = activeIncome.reduce((sum, i) => sum + i.monthly_pay, 0);
+  const totalAnnualIncome = activeIncome.reduce((sum, i) => sum + i.annual_pay, 0);
   const totalMonthlyExpenses = activeExpenses.reduce((sum, e) => sum + (e.monthly_cost || 0), 0);
   const totalMonthlyLoans = calculateTotalMonthlyLoans(loans);
   const totalAnnualExpenses = activeExpenses.reduce((sum, e) => sum + calculateTotalAnnual(e), 0);
