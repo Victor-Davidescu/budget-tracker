@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import { PlusCircle, Edit2, Trash2, EyeOff, Eye, X, Info, RefreshCw, ArrowDownUp } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, EyeOff, Eye, X, RefreshCw, ArrowDownUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters.js';
 import { calculateTotalAnnual } from '../../services/calculations.js';
 
 const ExpenseTable = ({ 
   expenseHook, 
-  totalNetIncome, 
   isEssential, 
   title, 
-  colorScheme,
-  thresholds 
+  colorScheme
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [sortAmountDesc, setSortAmountDesc] = useState(true);
   
   // Filter expenses based on type
@@ -42,22 +39,6 @@ const ExpenseTable = ({
       const annual = expense.annual_cost || 0;
       return sum + (monthly * 12) + annual;
     }, 0);
-
-  // Calculate percentage of net income
-  const percentage = totalNetIncome > 0 ? (totalAnnual / totalNetIncome) * 100 : 0;
-
-  // Determine color coding based on thresholds
-  const getPercentageColor = (percentage) => {
-    if (percentage < thresholds.good) return 'text-green-600';
-    if (percentage <= thresholds.acceptable) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getPercentageBg = (percentage) => {
-    if (percentage < thresholds.good) return 'bg-green-50';
-    if (percentage <= thresholds.acceptable) return 'bg-yellow-50';
-    return 'bg-red-50';
-  };
 
   // Headers with Category column in 1st position
   const headers = [
@@ -170,7 +151,7 @@ const ExpenseTable = ({
   return (
     <div className={`bg-white border ${colorScheme.border} rounded-lg overflow-hidden`}>
       {/* Header with Summary */}
-      <div className={`p-6 ${getPercentageBg(percentage)} border-b ${colorScheme.border}`}>
+      <div className={`p-6 bg-gray-50 border-b ${colorScheme.border}`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-gray-800">{title}</h3>
           
@@ -236,64 +217,7 @@ const ExpenseTable = ({
               <div className="text-xs text-gray-600">total per year</div>
             </div>
           </div>
-
-          {/* Percentage with Info */}
-          <div className="text-right relative">
-            <div className="flex items-center gap-2 justify-end mb-1">
-              <span className="text-sm text-gray-600">% of Total Annual Net Income</span>
-              <div className="relative">
-                <button
-                  onClick={() => setShowInfo(!showInfo)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Show percentage guidelines"
-                >
-                  <Info size={16} />
-                </button>
-                
-                {/* Popup Info */}
-                {showInfo && (
-                  <div className="absolute right-0 top-8 z-10 w-80 bg-white border border-gray-300 shadow-lg rounded-lg p-3">
-                    <div className="text-xs text-gray-700">
-                      <div className="font-semibold mb-1">{title} Guidelines:</div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-green-500 rounded"></div>
-                          <span>&lt;{thresholds.good}% - Good (Recommended)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                          <span>{thresholds.good}-{thresholds.acceptable}% - Acceptable</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-red-500 rounded"></div>
-                          <span>&gt;{thresholds.acceptable}% - High (Consider reducing)</span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Arrow pointing to info button */}
-                    <div className="absolute top-[-6px] right-4 w-0 h-0 border-l-6 border-r-6 border-b-6 border-l-transparent border-r-transparent border-b-white"></div>
-                    <div className="absolute top-[-7px] right-4 w-0 h-0 border-l-6 border-r-6 border-b-6 border-l-transparent border-r-transparent border-b-gray-300"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className={`text-lg font-bold ${getPercentageColor(percentage)}`}>
-              {percentage.toFixed(1)}%
-              <span className="text-sm ml-2">
-                {percentage < thresholds.good ? '(Good)' : 
-                 percentage <= thresholds.acceptable ? '(Acceptable)' : '(High)'}
-              </span>
-            </div>
-          </div>
         </div>
-        
-        {/* Click outside to close popup */}
-        {showInfo && (
-          <div 
-            className="fixed inset-0 z-5" 
-            onClick={() => setShowInfo(false)}
-          ></div>
-        )}
       </div>
 
       {/* Add/Edit Expense Form */}

@@ -1,7 +1,7 @@
 import React from 'react';
 import ExpenseTable from '../ui/ExpenseTable.jsx';
 
-const Expenses = ({ expenseHook, totalNetIncome }) => {
+const Expenses = ({ expenseHook }) => {
   // Color schemes for different expense types
   const essentialColorScheme = {
     border: 'border-blue-200',
@@ -40,21 +40,17 @@ const Expenses = ({ expenseHook, totalNetIncome }) => {
       {/* Essential Living Expenses Section */}
       <ExpenseTable 
         expenseHook={expenseHook} 
-        totalNetIncome={totalNetIncome}
         isEssential={true}
         title="Essential Expenses (Needs)"
         colorScheme={essentialColorScheme}
-        thresholds={{ good: 45, acceptable: 50 }}
       />
 
       {/* Non-Essential Expenses Section */}
       <ExpenseTable 
         expenseHook={expenseHook} 
-        totalNetIncome={totalNetIncome}
         isEssential={false}
         title="Non-Essential Expenses (Wants)"
         colorScheme={nonEssentialColorScheme}
-        thresholds={{ good: 25, acceptable: 30 }}
       />
     </div>
   );
