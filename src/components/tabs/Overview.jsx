@@ -144,20 +144,6 @@ const Overview = ({
             </div>
           </div>
         </div>
-
-        <div className="bg-white border rounded-lg p-6">
-          <h3 className="font-semibold text-gray-700 mb-4">Expense Breakdown</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Essential:</span>
-              <span className="font-semibold">£{formatCurrency(totals.essentialExpenses)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Non-Essential:</span>
-              <span className="font-semibold">£{formatCurrency(totals.nonEssentialExpenses)}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Category Breakdown */}
