@@ -73,7 +73,14 @@ export const useInvestments = () => {
       return false;
     }
 
-    await updateInvestment(editingInvestmentId, investmentForm);
+    const updatedInvestmentData = {
+      ...investmentForm,
+      current_value: parseFloat(investmentForm.current_value) || 0,
+      initial_investment: parseFloat(investmentForm.initial_investment) || 0,
+      monthly_contribution: parseFloat(investmentForm.monthly_contribution) || 0
+    };
+
+    await updateInvestment(editingInvestmentId, updatedInvestmentData);
     setInvestmentForm(DEFAULT_INVESTMENT);
     setEditingInvestmentId(null);
     setIsAddingInvestment(false);
@@ -136,7 +143,15 @@ export const useInvestments = () => {
       return false;
     }
 
-    await updatePension(editingPensionId, pensionForm);
+    const updatedPensionData = {
+      ...pensionForm,
+      current_value: parseFloat(pensionForm.current_value) || 0,
+      initial_investment: parseFloat(pensionForm.initial_investment) || 0,
+      monthly_contribution: parseFloat(pensionForm.monthly_contribution) || 0,
+      employer_contribution: parseFloat(pensionForm.employer_contribution) || 0
+    };
+
+    await updatePension(editingPensionId, updatedPensionData);
     setPensionForm(DEFAULT_PENSION);
     setEditingPensionId(null);
     setIsAddingPension(false);
