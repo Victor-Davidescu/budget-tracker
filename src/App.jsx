@@ -11,6 +11,7 @@ import { calculateTotals, getCategoryBreakdown, getEmergencyFundStatus } from '.
 // Components
 import Layout from './components/Layout.jsx';
 import Overview from './components/tabs/Overview.jsx';
+import Dashboard from './components/tabs/Dashboard.jsx';
 import Income from './components/tabs/Income.jsx';
 import Expenses from './components/tabs/Expenses.jsx';
 import Loans from './components/tabs/Loans.jsx';
@@ -54,6 +55,15 @@ const App = () => {
           categoryBreakdown={categoryBreakdown}
           emergencyFundStatus={emergencyFundStatus}
           loans={loanHook.loans}
+        />
+      )}
+
+      {activeTab === TABS.DASHBOARD && (
+        <Dashboard 
+          totals={totals}
+          categoryBreakdown={categoryBreakdown}
+          income={incomeHook.income}
+          expenses={expenseHook.expenses}
         />
       )}
 

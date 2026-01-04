@@ -2,6 +2,7 @@ export const API_URL = '';
 
 export const TABS = {
   OVERVIEW: 'overview',
+  DASHBOARD: 'dashboard',
   INCOME: 'income',
   EXPENSES: 'expenses',
   LOANS: 'loans',
